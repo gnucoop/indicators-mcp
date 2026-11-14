@@ -57,6 +57,24 @@ Humanitarian minimum standards with key indicators and guidance notes (WASH, foo
 
 **To unblock:** ask Sphere (info@spherestandards.org) for written permission to index the key indicators and guidance notes, with attribution and a link back, in a free public MCP server; ask whether it can extend to the upcoming edition, and how to obtain the content.
 
+### ⚠️ Sendai Framework indicators (`sendai`) — mostly covered already; reuse terms unclear
+
+The 38 indicators for the 7 global targets of the Sendai Framework for Disaster Risk Reduction (A mortality, B affected people, C economic loss, D critical infrastructure and basic services, E DRR strategies, F international cooperation, G early warning), checked 14 Nov 2026.
+
+**Already covered.** UNDRR is custodian of both frameworks, and 12 SDG records in our `sdg` source already carry the Sendai metadata (definition, computation, data sources): SDG 1.5.1–1.5.4, 11.5.1–11.5.3, 11.b.1–11.b.2 and 13.1.1–13.1.3. Together they cover targets **A–E**. Only **F** (international cooperation) and **G** (early warning) have no SDG counterpart.
+
+**Sources.**
+- The official list: report of the expert working group on indicators and terminology, UN document [A/71/644](https://digitallibrary.un.org/record/852089), endorsed by General Assembly resolution [A/RES/71/276](https://digitallibrary.un.org/record/859424) (2 Feb 2017). [PreventionWeb](https://www.preventionweb.net/sendai-framework/sendai-framework-monitor/indicators) republishes it (code, one-line wording, compound flag, a few notes; no definitions).
+- Definitions and methods: UNDRR's [Technical Guidance for Monitoring and Reporting on Progress in Achieving the Global Targets of the Sendai Framework](https://www.undrr.org/publication/technical-guidance-monitoring-and-reporting-progress-achieving-global-targets-sendai) (2017, 180 pages, PDF only; no licence stated on the page; the PDF itself not yet checked).
+
+**Terms.**
+- UNDRR / PreventionWeb [website terms](https://www.undrr.org/terms-and-conditions-use-undrrorg): personal, non-commercial use only, "without any right to resell or redistribute them or to compile or create derivative works". Indexing the website's text needs permission.
+- The indicator list is an official UN document. UN documents with a symbol were historically public domain ([ST/AI/189/Add.9/Rev.2](https://en.wikisource.org/wiki/Administrative_Instruction_ST/AI/189/Add.9/Rev.2)); the current [UN Publications Policy Manual (2020)](https://uncitral.un.org/sites/uncitral.un.org/files/media-documents/uncitral/en/policy_manual_rev_sept_2020.pdf) replaces it, and its treatment of documents is not confirmed. Public reuse of UN publications needs permission from permissions@un.org.
+
+**Access.** PreventionWeb returns a "Security check" (HTTP 403) to scripted requests and asks for a 10-second crawl delay in robots.txt; browsers can view it.
+
+**If we build it:** a small `sendai` source of 38 short records from the A/71/644 text (code, wording, target, compound flag), each linking to the matching SDG records and to the Technical Guidance. No crawling needed (the list is fixed). Before publishing on the public endpoint, confirm the reuse status of A/71/644 (permissions@un.org or UNDRR).
+
 ### ⚠️ EU Global Europe Results Framework (INTPA)
 
 IndiKit already flags these indicators, but the methodology notes are PDFs, which take more work to parse.

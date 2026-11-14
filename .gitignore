@@ -9,3 +9,4 @@ dist/
 wrangler.local.toml
 *.sqlite
 *.sqlite3
+.claude/
