@@ -130,6 +130,7 @@ bun run scripts/smoke-http.ts http://localhost:3000/mcp
 | `INDICATORS_DB` | `./indicators.db` | |
 | `RATE_LIMIT_PER_HOUR` | `120` | Tool calls per client IP per hour (`0` = off) |
 | `RATE_LIMIT_PER_DAY` | `1000` | Tool calls per client IP per day (`0` = off) |
+| `PUBLIC_URL` | the request's address | Public base URL shown on the home page and in the MCP server info, e.g. `https://indicators-mcp.gnucoop.workers.dev` |
 | `TRUST_PROXY` | off (`1` in Docker) | Read the client IP from `CF-Connecting-IP` / `Fly-Client-IP` / `X-Forwarded-For` |
 
 ### Docker (any container host)

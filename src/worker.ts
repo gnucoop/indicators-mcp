@@ -15,6 +15,8 @@ export interface Env {
   RATE_LIMITER?: RateLimit;
   /** Shown on GET / so users know the limits, e.g. "30 tool calls/minute per IP". */
   LIMITS_NOTE?: string;
+  /** Public base URL advertised on the home page, e.g. "https://indicators-mcp.gnucoop.workers.dev". */
+  PUBLIC_URL?: string;
 }
 
 // One handler per isolate: keeps the catalog cache warm across requests.
@@ -25,6 +27,8 @@ function getHandler(env: Env) {
   const handle = createHttpHandler({
     repo: d1Repo(env.DB),
     serverOptions: { jsonSchemaValidator: new CfWorkerJsonSchemaValidator() },
+    limitsText: "30 tool calls per minute per IP, within a shared daily quota.",
+    publicUrl: env.PUBLIC_URL,
     about: {
       limits: env.LIMITS_NOTE ?? "Shared free-tier quota; initialize / tools/list are not counted.",
       unlimited: "Run the server locally (stdio) for unlimited use.",

@@ -15,6 +15,9 @@ compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
+# Public address advertised on the home page, in the root JSON and in the MCP
+# server info (icons). Change it if you deploy under another name or domain.
+PUBLIC_URL = "https://indicators-mcp.gnucoop.workers.dev"
 LIMITS_NOTE = "Free public endpoint: 30 tool calls per minute per IP, shared daily quota. initialize / tools/list are not counted."
 
 [[d1_databases]]

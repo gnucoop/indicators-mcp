@@ -19,6 +19,7 @@ function decode(base64: string): Uint8Array<ArrayBuffer> {
 export const ICON_FILES: Record<string, { body: Uint8Array<ArrayBuffer>; contentType: string }> = {
   "/favicon.ico": { body: decode(FAVICON_ICO_BASE64), contentType: "image/x-icon" },
   "/icon.png": { body: decode(ICON_512_PNG_BASE64), contentType: "image/png" },
+  "/apple-touch-icon.png": { body: decode(ICON_512_PNG_BASE64), contentType: "image/png" },
   "/icon-128.png": { body: decode(ICON_128_PNG_BASE64), contentType: "image/png" },
 };
 

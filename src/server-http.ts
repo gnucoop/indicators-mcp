@@ -8,6 +8,8 @@
  *   INDICATORS_DB          default ./indicators.db
  *   RATE_LIMIT_PER_HOUR    tool calls per client IP per hour (default 120, 0 = off)
  *   RATE_LIMIT_PER_DAY     tool calls per client IP per day  (default 1000, 0 = off)
+ *   PUBLIC_URL             public base URL advertised on the home page and in
+ *                          the MCP server info (default: the request's origin)
  *   TRUST_PROXY            "1" to take the client IP from CF-Connecting-IP /
  *                          Fly-Client-IP / X-Forwarded-For (set it only behind a proxy)
  */
@@ -45,6 +47,11 @@ const limiter = new MemoryRateLimiter(
 const handle = createHttpHandler({
   repo: bunSqliteRepo(db),
   limit: (ip, units) => limiter.check(ip, units),
+  publicUrl: process.env.PUBLIC_URL,
+  limitsText:
+    perHour || perDay
+      ? `${[perHour && `${perHour} tool calls per hour`, perDay && `${perDay} per day`].filter(Boolean).join(" and ")} per IP.`
+      : undefined,
   about: {
     limits: {
       tool_calls_per_hour_per_ip: perHour || "unlimited",

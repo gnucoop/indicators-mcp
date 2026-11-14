@@ -7,6 +7,7 @@
  */
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { IndicatorRepo } from "./repo/types.ts";
+import { renderHome, wantsHtml } from "./home.ts";
 import { httpIcons, ICON_FILES, PROJECT_URL } from "./icons.ts";
 import { createServer, SERVER_NAME, SERVER_VERSION, type CreateServerOptions } from "./tools.ts";
 
@@ -30,6 +31,13 @@ export interface HttpHandlerOptions {
   /** Short text shown on GET / (e.g. deployment limits). */
   about?: Record<string, unknown>;
   serverOptions?: CreateServerOptions;
+  /** Human-readable usage limits, shown on the HTML home page. */
+  limitsText?: string;
+  /**
+   * Public base URL to advertise (home page, root JSON, icon URLs), e.g.
+   * "https://indicators-mcp.gnucoop.workers.dev". Defaults to the request's origin.
+   */
+  publicUrl?: string;
 }
 
 const CORS_HEADERS: Record<string, string> = {
@@ -63,9 +71,21 @@ function countToolCalls(body: unknown): number {
   return msgs.filter((m) => m && typeof m === "object" && (m as { method?: unknown }).method === "tools/call").length;
 }
 
+/** Normalise a configured public URL to an origin (no trailing slash); undefined if unset or invalid. */
+export function publicOrigin(value: string | undefined): string | undefined {
+  if (!value?.trim()) return undefined;
+  try {
+    const u = new URL(value.trim());
+    return u.protocol === "https:" || u.protocol === "http:" ? u.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createHttpHandler(opts: HttpHandlerOptions) {
   return async function handle(req: Request, ip = "unknown"): Promise<Response> {
     const url = new URL(req.url);
+    const origin = publicOrigin(opts.publicUrl) ?? url.origin;
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -79,18 +99,34 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
       });
     }
 
-    if (path === "/" && req.method === "GET") {
+    if (path === "/" && (req.method === "GET" || req.method === "HEAD")) {
+      if (wantsHtml(req.headers.get("accept"))) {
+        const catalog = await opts.repo.catalog().catch(() => null);
+        const html = renderHome({ origin, catalog, limits: opts.limitsText });
+        return new Response(req.method === "HEAD" ? null : html, {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=300",
+            Vary: "Accept",
+            "Content-Security-Policy":
+              "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
+          },
+        });
+      }
       return jsonResponse({
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description: "MCP server to search, inspect and compare M&E indicators (IndiKit, UN SDG, World Bank WDI, DHS Program).",
-        mcp_endpoint: `${url.origin}/mcp`,
-        icon: `${url.origin}/icon.png`,
+        mcp_endpoint: `${origin}/mcp`,
+        icon: `${origin}/icon.png`,
         source_code: PROJECT_URL,
         transport: "streamable-http (stateless, JSON responses)",
         tools: ["search_indicators", "get_indicator_details", "list_catalog_metadata", "compare_indicators"],
+        home_page: "Open this URL in a browser for setup instructions.",
         ...opts.about,
-      });
+      }, 200, { Vary: "Accept" });
     }
 
     if (path !== "/mcp") return jsonResponse({ error: "Not found. The MCP endpoint is /mcp." }, 404);
@@ -127,7 +163,7 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
       }
     }
 
-    const server = createServer(opts.repo, { icons: httpIcons(url.origin), ...opts.serverOptions });
+    const server = createServer(opts.repo, { icons: httpIcons(origin), ...opts.serverOptions });
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
