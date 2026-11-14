@@ -257,4 +257,6 @@ bun run typecheck
 - **UN SDG:** indicator lists and metadata come from the [UN Statistics Division](https://unstats.un.org/sdgs/) (SDG Global Database API and SDG Indicators Metadata Repository); the metadata is written by each indicator's custodian agencies.
 - **World Bank WDI:** indicator definitions and metadata from the [World Bank API](https://datahelpdesk.worldbank.org/knowledgebase/topics/125589), licensed [CC BY 4.0](https://datacatalog.worldbank.org/public-licenses#cc-by).
 
-Every record links back to its source page or metadata document. Please cite it. This server only indexes the content to make it searchable. Code: MIT.
+Every record links back to its source page or metadata document. Please cite it. This server only indexes the content to make it searchable.
+
+**Code:** licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) or any later version (AGPL-3.0-or-later); see [LICENSE](LICENSE). If you modify the server and make it available to others, including as a network service, you must share your changes under the same licence.
