@@ -1,10 +1,14 @@
 # Cloudflare Workers deployment (free plan: 100k requests/day).
-# Setup once:
+#
+# This file is the template and stays in git with a placeholder database id.
+# Deploys use your own copy, wrangler.local.toml (gitignored), with the real id:
 #   bunx wrangler login
-#   bunx wrangler d1 create indicators-mcp     # paste the database_id below
+#   bunx wrangler d1 create indicators-mcp     # note the database_id it prints
+#   cp wrangler.toml wrangler.local.toml       # paste the id into the copy
 #   bun run export:d1
-#   bunx wrangler d1 execute indicators-mcp --remote --file dist/d1.sql
-#   bun run deploy:worker
+#   bun run d1:import                          # uses wrangler.local.toml
+#   bun run deploy:worker                      # uses wrangler.local.toml
+# Keep the two files in sync when you change settings below.
 name = "indicators-mcp"
 main = "src/worker.ts"
 compatibility_date = "2025-09-01"
@@ -16,8 +20,8 @@ LIMITS_NOTE = "Free public endpoint: 30 tool calls per minute per IP, shared dai
 [[d1_databases]]
 binding = "DB"
 database_name = "indicators-mcp"
-# Replace with the id printed by `wrangler d1 create indicators-mcp`.
-# (Any value works for local `wrangler dev`.)
+# Placeholder: put the real id only in wrangler.local.toml.
+# (Any value works for local `wrangler dev`, which uses this file.)
 database_id = "00000000-0000-0000-0000-000000000000"
 
 # Per-IP rate limit (Workers Rate Limiting API). Remove this block to rely only

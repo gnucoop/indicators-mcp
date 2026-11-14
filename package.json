@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "export:d1": "bun run scripts/export-d1.ts",
     "dev:worker": "wrangler dev",
-    "deploy:worker": "wrangler deploy"
+    "d1:import": "wrangler d1 execute indicators-mcp --remote --file dist/d1.sql --config wrangler.local.toml",
+    "deploy:worker": "wrangler deploy --config wrangler.local.toml"
   },
   "dependencies": {
     "@cfworker/json-schema": "^4.1.6",

@@ -110,7 +110,7 @@ docker build -t indicators-mcp .
 docker run -p 3000:3000 indicators-mcp
 ```
 
-The image deploys as-is to Fly.io, Render, Railway, Koyeb, Cloud Run or a VPS. To update the data, re-run the ingest and rebuild the image. `TRUST_PROXY=1` is the default in the image because these hosts sit behind a proxy. Set it to `0` if you expose the container directly.
+The image deploys as-is to Fly.io, Render, Railway, Koyeb, Cloud Run or a VPS. To refresh the data, see [Updating the data](#updating-the-data). `TRUST_PROXY=1` is the default in the image because these hosts sit behind a proxy. Set it to `0` if you expose the container directly.
 
 ### Cloudflare Workers + D1 (free tier)
 
@@ -118,15 +118,58 @@ The tools are the same, served from Cloudflare's edge with the catalog in [D1](h
 
 ```bash
 bunx wrangler login
-bunx wrangler d1 create indicators-mcp        # copy the database_id into wrangler.toml
+bunx wrangler d1 create indicators-mcp        # note the database_id it prints
+cp wrangler.toml wrangler.local.toml          # paste the database_id into the copy
 bun run export:d1                             # indicators.db → dist/d1.sql
-bunx wrangler d1 execute indicators-mcp --remote --file dist/d1.sql
+bun run d1:import                             # loads dist/d1.sql into your remote D1
 bun run deploy:worker                         # → https://indicators-mcp.<you>.workers.dev/mcp
 ```
 
+`wrangler.toml` is the template kept in git, with a placeholder database id. Your real id goes only in `wrangler.local.toml`, which is gitignored; `d1:import` and `deploy:worker` use it. If you change a setting (rate limit, worker name, routes), change it in both files.
+
 To test locally, load the data with `bunx wrangler d1 execute indicators-mcp --local --file dist/d1.sql`, then run `bun run dev:worker`.
 
-To update the data, run `bun run ingest`, then `bun run export:d1`, then the `d1 execute --remote` command again. The export rebuilds the FTS5 index inside D1, because `wrangler d1 export/import` skips virtual tables.
+To refresh the data, see [Updating the data](#updating-the-data). The export rebuilds the FTS5 index inside D1, because `wrangler d1 export/import` skips virtual tables.
+
+## Updating the data
+
+Servers never crawl on their own; every server reads a prebuilt catalog. To pick up changes on IndiKit (new, edited or removed indicators), rebuild `indicators.db` locally, then push it to wherever the server runs.
+
+### 1. Rebuild the database
+
+Crawl into a new file, so your current database keeps working if the crawl fails partway:
+
+```bash
+bun run ingest --db indicators.new.db
+```
+
+A full crawl takes about 10–15 minutes (1 request/second, as IndiKit's robots.txt asks). Check the summary at the end: `0 failed`, and the same number of rows in the indicators table and the FTS index. Then replace the old file:
+
+```bash
+mv indicators.new.db indicators.db
+```
+
+Starting from an empty file also drops indicators that IndiKit has removed. A re-run into the existing `indicators.db` updates and adds records, but keeps removed ones. To remove them in place instead, use `bun run ingest --fresh`; it deletes IndiKit's rows before crawling, so the database stays incomplete until the crawl finishes.
+
+To refresh a single sector, run `bun run ingest --sector wash`. Sector lists already in the database are merged, not overwritten.
+
+### 2. Push it to each deployment
+
+| Where | What to run |
+|---|---|
+| Local stdio | Nothing to push. Restart your MCP client (or the server) so it reopens the file. |
+| Bun HTTP | Restart `bun run start:http`. |
+| Docker | `docker build -t indicators-mcp .`, then redeploy the image to your host. The database is baked into the image. |
+| Cloudflare Workers | `bun run export:d1`, then `bun run d1:import`. No redeploy needed: the Worker reads D1 directly. The import drops and reloads the whole catalog, so requests may fail during the few seconds it runs. |
+
+### 3. Check it
+
+```bash
+bun run scripts/smoke-stdio.ts                                   # local database
+bun run scripts/smoke-http.ts https://<host>/mcp                 # a deployed endpoint
+```
+
+Both print the catalog size, so you can confirm the new count went live.
 
 ## Limits
 
