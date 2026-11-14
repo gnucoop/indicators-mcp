@@ -1,6 +1,6 @@
 # indicators-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators** from several repositories at once. It currently covers [IndiKit](https://www.indikit.net) and the [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/). Other repositories (WHO, World Bank, Sphere, local CSV/PDF) can be added as adapters.
+An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators** from several repositories at once. It currently covers [IndiKit](https://www.indikit.net), the [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) and the [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/). More sources are planned: see [ROADMAP.md](ROADMAP.md).
 
 - **Fast and offline:** SQLite FTS5 full-text search, with no vector database and no live scraping during a conversation.
 - **Two ways to use it:** a local **stdio** server, or a public **HTTP** endpoint (Streamable HTTP) on Docker or Cloudflare Workers.
@@ -20,8 +20,9 @@ An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, insp
 |---|---|---|---|---|
 | `indikit` | [IndiKit](https://www.indikit.net) (People in Need) | 511 | Project-level indicators: wording, purpose, survey questions, calculation, disaggregation, caveats. Logframe level (Output, Outcome, Impact, Process) | 25 humanitarian/development sectors (WASH, Food Security, Nutrition…) |
 | `sdg` | [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) (UN Statistics Division) | 251 | Goal, target, tier, custodian agencies and data series, plus the official [metadata](https://unstats.un.org/sdgs/metadata/): definition, method of computation, rationale, limitations, data sources, disaggregation. No logframe level | The 17 goals, e.g. `SDG 6 Clean Water and Sanitation` |
+| `wdi` | [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | 1,498 | National statistics with World Bank metadata: long definition, unit, periodicity, source, statistical concept and methodology, limitations, development relevance, aggregation method. CC BY 4.0. No logframe level | WDI topics, e.g. `Health`, `Education`, `Gender`, `Environment` |
 
-Ids are namespaced: `indikit:51-access-to-drinking-water`, `sdg:6.1.1`. A typical use is comparing a project indicator with its SDG counterpart, e.g. `compare_indicators` with `["indikit:51-access-to-drinking-water", "sdg:6.1.1"]`.
+Ids are namespaced: `indikit:51-access-to-drinking-water`, `sdg:6.1.1`, `wdi:SH.H2O.SMDW.ZS`. A typical use is comparing a project indicator with its SDG counterpart, e.g. `compare_indicators` with `["indikit:51-access-to-drinking-water", "sdg:6.1.1"]`.
 
 ## Tools
 
@@ -44,16 +45,17 @@ Requires [Bun](https://bun.com) ≥ 1.2 (`brew install bun`).
 
 ```bash
 bun install
-bun run ingest             # all sources, ~20 min in total (1 request/second)
+bun run ingest             # all sources, ~30–50 min in total
 bun run start              # stdio server
 ```
 
 Ingest options:
 
 ```bash
-bun run ingest --source sdg                          # one source (~6 min); or --source indikit (~10–15 min)
+bun run ingest --source sdg                          # one source: sdg ~6 min, indikit ~10–15 min, wdi ~10–30 min
 bun run ingest --source indikit --sector wash --limit 15   # quick test run
 bun run ingest --source sdg --sector 6               # one SDG goal, by number or name ("water")
+bun run ingest --source wdi --sector health --limit 10   # a few WDI indicators from one topic
 bun run ingest --fresh                               # drop each source's rows before ingesting it
 bun run ingest --help
 ```
@@ -164,7 +166,7 @@ Crawl all sources into a new file, so your current database keeps working if the
 bun run ingest --db indicators.new.db
 ```
 
-A full crawl takes about 20 minutes: IndiKit 10–15 minutes and UN SDG about 6 (1 request/second, as IndiKit's robots.txt asks; the same pace is used for UN Stats). Check the summary at the end: `0 failed`, and the same number of rows in the indicators table and the FTS index. Then replace the old file:
+A full crawl takes about 30–50 minutes: IndiKit 10–15 minutes and UN SDG about 6 (1 request/second, as IndiKit's robots.txt asks; the same pace is used for UN Stats), and World Bank WDI 10–30 (20 bulk metadata pages, each taking 25–90 seconds on the World Bank's side). Check the summary at the end: `0 failed`, and the same number of rows in the indicators table and the FTS index. Then replace the old file:
 
 ```bash
 mv indicators.new.db indicators.db
@@ -172,7 +174,7 @@ mv indicators.new.db indicators.db
 
 Starting from an empty file also drops indicators that a repository has removed. A re-run into the existing `indicators.db` updates and adds records, but keeps removed ones. To remove them in place instead, use `bun run ingest --fresh`; it deletes each source's rows before crawling it, so the database stays incomplete until the crawl finishes.
 
-To refresh one source, add `--source indikit` or `--source sdg`; the other source's rows stay as they are. To refresh a single sector, add `--sector wash` (or `--sector 6` for an SDG goal). Sector lists already in the database are merged, not overwritten.
+To refresh one source, add `--source indikit`, `--source sdg` or `--source wdi`; the other sources' rows stay as they are. To refresh a single sector, add `--sector wash` (or `--sector 6` for an SDG goal). Sector lists already in the database are merged, not overwritten.
 
 ### 2. Push it to each deployment
 
@@ -217,6 +219,7 @@ src/
 │   ├── http.ts           Polite fetcher shared by adapters (delay, retries, User-Agent)
 │   ├── indikit.ts        indikit.net crawler/parser (fetch + cheerio)
 │   ├── sdg.ts            UN SDG API + harmonized metadata documents
+│   ├── wdi.ts            World Bank WDI list + bulk series metadata
 │   ├── docx.ts           Minimal .docx reader (fflate + cheerio) for SDG metadata
 │   └── html-to-md.ts     HTML → Markdown for methodology text
 ├── ingest.ts             CLI: run adapters → indicators.db
@@ -252,5 +255,6 @@ bun run typecheck
 
 - **IndiKit:** the indicator guidance is © [People in Need](https://www.peopleinneed.net) / IndiKit.
 - **UN SDG:** indicator lists and metadata come from the [UN Statistics Division](https://unstats.un.org/sdgs/) (SDG Global Database API and SDG Indicators Metadata Repository); the metadata is written by each indicator's custodian agencies.
+- **World Bank WDI:** indicator definitions and metadata from the [World Bank API](https://datahelpdesk.worldbank.org/knowledgebase/topics/125589), licensed [CC BY 4.0](https://datacatalog.worldbank.org/public-licenses#cc-by).
 
 Every record links back to its source page or metadata document. Please cite it. This server only indexes the content to make it searchable. Code: MIT.

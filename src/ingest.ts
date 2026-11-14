@@ -2,19 +2,21 @@
 /**
  * Offline ingestion CLI: runs adapters and upserts into indicators.db.
  *
- *   bun run src/ingest.ts [--source all|indikit|sdg] [--sector wash] [--limit 20]
+ *   bun run src/ingest.ts [--source all|indikit|sdg|wdi] [--sector wash] [--limit 20]
  *                         [--delay 1000] [--db ./indicators.db] [--fresh]
  */
 import { parseArgs } from "node:util";
 import { countRows, defaultDbPath, deleteSource, getSector, openDb, upsertMany } from "./db.ts";
 import { IndiKitAdapter } from "./adapters/indikit.ts";
 import { SdgAdapter } from "./adapters/sdg.ts";
+import { WdiAdapter } from "./adapters/wdi.ts";
 import type { Adapter, AdapterStats } from "./adapters/types.ts";
 import type { UnifiedIndicator } from "./types.ts";
 
 const ADAPTERS: Record<string, () => Adapter> = {
   indikit: () => new IndiKitAdapter(),
   sdg: () => new SdgAdapter(),
+  wdi: () => new WdiAdapter(),
 };
 
 const log = (m: string) => console.error(m);
@@ -39,7 +41,8 @@ if (values.help) {
   --source <name>   Adapter(s) to run: ${Object.keys(ADAPTERS).join(", ")}, a comma-separated
                     list, or "all" (default all)
   --sector <text>   Only sectors whose name/slug contains <text> (repeatable).
-                    For sdg: a goal number ("6") or part of its name ("water")
+                    For sdg: a goal number ("6") or part of its name ("water");
+                    for wdi: part of a topic name ("health")
   --limit <n>       Stop after n indicators per source (test runs)
   --delay <ms>      Delay between HTTP requests (default 1000, per robots.txt)
   --db <path>       Database file (default $INDICATORS_DB or ./indicators.db)

@@ -13,6 +13,8 @@ export class PoliteFetcher {
     private delayMs: number,
     private log: (m: string) => void = console.error,
     private retries = 3,
+    /** Per-request timeout; some APIs (World Bank bulk metadata) take minutes. */
+    private timeoutMs = 120_000,
   ) {}
 
   async text(url: string, accept = "text/html,application/xhtml+xml"): Promise<string | null> {
@@ -45,7 +47,7 @@ export class PoliteFetcher {
         const res = await fetch(url, {
           headers: { "User-Agent": USER_AGENT, Accept: accept },
           redirect: "follow",
-          signal: AbortSignal.timeout(120_000),
+          signal: AbortSignal.timeout(this.timeoutMs),
         });
         if (res.ok) return res;
         if (res.status === 404 || res.status === 410) {
