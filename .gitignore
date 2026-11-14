@@ -1,0 +1,8 @@
+node_modules/
+indicators.db
+indicators.db-*
+dist/
+.wrangler/
+.dev.vars
+*.log
+.DS_Store

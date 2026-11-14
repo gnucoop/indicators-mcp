@@ -1,0 +1,31 @@
+# Cloudflare Workers deployment (free plan: 100k requests/day).
+# Setup once:
+#   bunx wrangler login
+#   bunx wrangler d1 create indicators-mcp     # paste the database_id below
+#   bun run export:d1
+#   bunx wrangler d1 execute indicators-mcp --remote --file dist/d1.sql
+#   bun run deploy:worker
+name = "indicators-mcp"
+main = "src/worker.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+LIMITS_NOTE = "Free public endpoint: 30 tool calls per minute per IP, shared daily quota. initialize / tools/list are not counted."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "indicators-mcp"
+# Replace with the id printed by `wrangler d1 create indicators-mcp`.
+# (Any value works for local `wrangler dev`.)
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# Per-IP rate limit (Workers Rate Limiting API). Remove this block to rely only
+# on the account-wide free-plan quota. Period must be 10 or 60 seconds.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[observability]
+enabled = true

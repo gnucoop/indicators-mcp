@@ -1,0 +1,8 @@
+node_modules
+.git
+.wrangler
+dist
+indicators.db-*
+test
+scripts
+*.log

@@ -1,0 +1,30 @@
+{
+  "name": "indicators-mcp",
+  "version": "0.1.0",
+  "description": "MCP server to search, inspect and compare M&E indicators (IndiKit + extensible adapters)",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "ingest": "bun run src/ingest.ts",
+    "start": "bun run src/server.ts",
+    "start:http": "bun run src/server-http.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "export:d1": "bun run scripts/export-d1.ts",
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "^4.1.6",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "cheerio": "^1.2.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261114.1",
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.162.0"
+  }
+}
