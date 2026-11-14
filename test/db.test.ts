@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { countRows, initSchema, upsertMany } from "../src/db.ts";
 import { bunSqliteRepo } from "../src/repo/bun-sqlite.ts";
-import { makeSnippet, sanitizeFtsQuery } from "../src/repo/sql.ts";
+import { diversifyBySource, makeSnippet, sanitizeFtsQuery } from "../src/repo/sql.ts";
 import { capRecords } from "../src/tools.ts";
 import type { UnifiedIndicator } from "../src/types.ts";
 
@@ -166,6 +166,35 @@ describe("repository", () => {
     expect(all.levels.find((l) => l.name === "Outcome")?.count).toBe(3);
     const indikit = await repo.catalog("indikit");
     expect(indikit.total).toBe(3);
+  });
+});
+
+describe("source diversity", () => {
+  const r = (id: string) => ({ id, source: id.split(":")[0]! });
+
+  test("caps any one source at half the results, keeping rank order", () => {
+    const ranked = ["dhs:1", "dhs:2", "dhs:3", "dhs:4", "sdg:1", "dhs:5", "wdi:1"].map(r);
+    expect(diversifyBySource(ranked, 4).map((x) => x.id)).toEqual(["dhs:1", "dhs:2", "sdg:1", "wdi:1"]);
+  });
+
+  test("backfills from the capped source when others run out", () => {
+    const ranked = ["dhs:1", "dhs:2", "dhs:3", "dhs:4", "sdg:1"].map(r);
+    expect(diversifyBySource(ranked, 4).map((x) => x.id)).toEqual(["dhs:1", "dhs:2", "dhs:3", "sdg:1"]);
+  });
+
+  test("search without a source filter is diversified, with a filter it is not", async () => {
+    const db = freshDb();
+    upsertMany(
+      db,
+      Array.from({ length: 8 }, (_, i) => ({ ...FIXTURES[3]!, id: `dhs:W${i}`, source: "dhs", title: `Water source ${i}`, sector: "Water" })),
+    );
+    const repo = bunSqliteRepo(db);
+    const mixed = (await repo.search({ query: "water", limit: 4 })).results;
+    expect(mixed.filter((x) => x.source === "dhs").length).toBe(2);
+    expect(mixed).toHaveLength(4);
+    const onlyDhs = (await repo.search({ query: "water", source: "dhs", limit: 4 })).results;
+    expect(onlyDhs.every((x) => x.source === "dhs")).toBe(true);
+    expect(onlyDhs).toHaveLength(4);
   });
 });
 

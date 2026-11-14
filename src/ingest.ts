@@ -2,7 +2,7 @@
 /**
  * Offline ingestion CLI: runs adapters and upserts into indicators.db.
  *
- *   bun run src/ingest.ts [--source all|indikit|sdg|wdi] [--sector wash] [--limit 20]
+ *   bun run src/ingest.ts [--source all|indikit|sdg|wdi|dhs] [--sector wash] [--limit 20]
  *                         [--delay 1000] [--db ./indicators.db] [--fresh]
  */
 import { parseArgs } from "node:util";
@@ -34,7 +34,7 @@ if (values.help) {
                     list, or "all" (default all)
   --sector <text>   Only sectors whose name/slug contains <text> (repeatable).
                     For sdg: a goal number ("6") or part of its name ("water");
-                    for wdi: part of a topic name ("health")
+                    for wdi or dhs: part of a topic name ("health", "nutrition")
   --limit <n>       Stop after n indicators per source (test runs)
   --delay <ms>      Delay between HTTP requests (default 1000, per robots.txt)
   --db <path>       Database file (default $INDICATORS_DB or ./indicators.db)

@@ -65,7 +65,43 @@ interface SummaryRow {
 
 const COLUMNS = "i.id, i.source, i.title, i.sector, i.level, i.definition, i.methodology, i.url";
 
-export function buildSearchSql(params: SearchParams, fts: string | null): { sql: string; args: unknown[] } {
+/**
+ * Without a source filter, no source may fill more than half of the results:
+ * large sources with many short, near-identical records (e.g. DHS breakdowns
+ * by sex or age) would otherwise crowd out the others. Results stay in rank
+ * order, and skipped ones backfill if other sources have too few matches.
+ */
+export function diversifyBySource<T extends { source: string }>(ranked: T[], limit: number): T[] {
+  const cap = Math.max(1, Math.ceil(limit / 2));
+  const picked: T[] = [];
+  const skipped: T[] = [];
+  const perSource = new Map<string, number>();
+  for (const r of ranked) {
+    if (picked.length >= limit) break;
+    const n = perSource.get(r.source) ?? 0;
+    if (n < cap) {
+      picked.push(r);
+      perSource.set(r.source, n + 1);
+    } else {
+      skipped.push(r);
+    }
+  }
+  if (picked.length < limit) {
+    const backfill = new Set(skipped.slice(0, limit - picked.length));
+    // Re-merge in original rank order.
+    return ranked.filter((r) => picked.includes(r) || backfill.has(r));
+  }
+  return picked;
+}
+
+/** How many ranked candidates to read when diversifying. */
+const CANDIDATE_FACTOR = 4;
+
+export function buildSearchSql(
+  params: SearchParams,
+  fts: string | null,
+  rowLimit = clampLimit(params.limit),
+): { sql: string; args: unknown[] } {
   const where: string[] = [];
   const args: unknown[] = [];
   if (fts) {
@@ -93,7 +129,7 @@ export function buildSearchSql(params: SearchParams, fts: string | null): { sql:
     where.push("i.level LIKE ? ESCAPE '\\'");
     args.push(likeContains(params.level.trim()));
   }
-  const limit = clampLimit(params.limit);
+  const limit = rowLimit;
   const select = "SELECT i.id, i.source, i.title, i.sector, i.level, i.definition";
   const sql = fts
     ? `${select} FROM indicators_fts JOIN indicators i ON i.rowid = indicators_fts.rowid
@@ -125,10 +161,12 @@ export class SqlIndicatorRepo implements IndicatorRepo {
   constructor(private db: SqlExecutor) {}
 
   async search(params: SearchParams): Promise<SearchResult> {
+    const limit = clampLimit(params.limit);
+    const diversify = !params.source?.trim();
     const run = async (fts: string | null) => {
-      const { sql, args } = buildSearchSql(params, fts);
+      const { sql, args } = buildSearchSql(params, fts, diversify ? limit * CANDIDATE_FACTOR : limit);
       const rows = await this.db.all<SummaryRow>(sql, args);
-      return rows.map(
+      return (diversify ? diversifyBySource(rows, limit) : rows).map(
         (r): IndicatorSummary => ({
           id: r.id,
           source: r.source,

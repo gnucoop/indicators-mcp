@@ -1,6 +1,6 @@
 # indicators-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators** from several repositories at once. It currently covers [IndiKit](https://www.indikit.net), the [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) and the [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/). More sources are planned: see [ROADMAP.md](ROADMAP.md).
+An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators** from several repositories at once. It currently covers [IndiKit](https://www.indikit.net), the [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/), the [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) and the [DHS Program](https://dhsprogram.com) survey indicators. More sources are planned: see [ROADMAP.md](ROADMAP.md).
 
 - **Fast and offline:** SQLite FTS5 full-text search, with no vector database and no live scraping during a conversation.
 - **Two ways to use it:** a local **stdio** server, or a public **HTTP** endpoint (Streamable HTTP) on Docker or Cloudflare Workers.
@@ -21,8 +21,9 @@ An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, insp
 | `indikit` | [IndiKit](https://www.indikit.net) (People in Need) | 511 | Project-level indicators: wording, purpose, survey questions, calculation, disaggregation, caveats. Logframe level (Output, Outcome, Impact, Process) | 25 humanitarian/development sectors (WASH, Food Security, Nutrition…) |
 | `sdg` | [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) (UN Statistics Division) | 251 | Goal, target, tier, custodian agencies and data series, plus the official [metadata](https://unstats.un.org/sdgs/metadata/): definition, method of computation, rationale, limitations, data sources, disaggregation. No logframe level | The 17 goals, e.g. `SDG 6 Clean Water and Sanitation` |
 | `wdi` | [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | 1,498 | National statistics with World Bank metadata: long definition, unit, periodicity, source, statistical concept and methodology, limitations, development relevance, aggregation method. CC BY 4.0. No logframe level | WDI topics, e.g. `Health`, `Education`, `Gender`, `Environment` |
+| `dhs` | [DHS Program](https://dhsprogram.com) indicators (ICF) | 3,237 | Household-survey indicator definitions: label, definition, denominator, measurement type, topic path and tags (SDGs, MICS, IYCF…). Short records with no methodology text; values by country are in the DHS API. No logframe level | 25 survey topics, e.g. `Water and Sanitation`, `Child Nutrition`, `Malaria` |
 
-Ids are namespaced: `indikit:51-access-to-drinking-water`, `sdg:6.1.1`, `wdi:SH.H2O.SMDW.ZS`. A typical use is comparing a project indicator with its SDG counterpart, e.g. `compare_indicators` with `["indikit:51-access-to-drinking-water", "sdg:6.1.1"]`.
+Ids are namespaced: `indikit:51-access-to-drinking-water`, `sdg:6.1.1`, `wdi:SH.H2O.SMDW.ZS`, `dhs:WS_SRCE_H_IMP`. A typical use is comparing a project indicator with its SDG counterpart, e.g. `compare_indicators` with `["indikit:51-access-to-drinking-water", "sdg:6.1.1"]`.
 
 ## Tools
 
@@ -37,6 +38,7 @@ Search details:
 - **Query cleaning:** the query is cleaned for FTS5 (special characters and `AND`/`OR`/`NOT`/`NEAR` are removed, and each term becomes a prefix match `"term"*`).
 - **Matching:** results must contain *all* terms. If nothing matches, the search falls back to *any* term.
 - **Ranking:** BM25, with title matches weighted the highest.
+- **Mixed sources:** without a `source` filter, no single source fills more than half of the results, so large sources with many short records (DHS) don't crowd out the others. Results keep their rank order, and if other sources have too few matches the remaining places are filled anyway.
 - **Filters only:** an empty `query` lists indicators by filters alone.
 
 ## Quick start
@@ -52,10 +54,11 @@ bun run start              # stdio server
 Ingest options:
 
 ```bash
-bun run ingest --source sdg                          # one source: sdg ~6 min, indikit ~10–15 min, wdi ~10–30 min
+bun run ingest --source sdg                          # one source: dhs ~10 s, sdg ~6 min, indikit ~10–15 min, wdi ~10–30 min
 bun run ingest --source indikit --sector wash --limit 15   # quick test run
 bun run ingest --source sdg --sector 6               # one SDG goal, by number or name ("water")
 bun run ingest --source wdi --sector health --limit 10   # a few WDI indicators from one topic
+bun run ingest --source dhs --sector nutrition          # DHS indicators from one survey topic
 bun run ingest --fresh                               # drop each source's rows before ingesting it
 bun run ingest --help
 ```
@@ -182,7 +185,7 @@ mv indicators.new.db indicators.db
 
 Starting from an empty file also drops indicators that a repository has removed. A re-run into the existing `indicators.db` updates and adds records, but keeps removed ones. To remove them in place instead, use `bun run ingest --fresh`; it deletes each source's rows before crawling it, so the database stays incomplete until the crawl finishes.
 
-To refresh one source, add `--source indikit`, `--source sdg` or `--source wdi`; the other sources' rows stay as they are. To refresh a single sector, add `--sector wash` (or `--sector 6` for an SDG goal). Sector lists already in the database are merged, not overwritten.
+To refresh one source, add `--source indikit`, `--source sdg`, `--source wdi` or `--source dhs`; the other sources' rows stay as they are. To refresh a single sector, add `--sector wash` (or `--sector 6` for an SDG goal). Sector lists already in the database are merged, not overwritten.
 
 ### 2. Push it to each deployment
 
@@ -229,6 +232,7 @@ src/
 │   ├── indikit.ts        indikit.net crawler/parser (fetch + cheerio)
 │   ├── sdg.ts            UN SDG API + harmonized metadata documents
 │   ├── wdi.ts            World Bank WDI list + bulk series metadata
+│   ├── dhs.ts            DHS Program indicator definitions, tags and citation
 │   ├── docx.ts           Minimal .docx reader (fflate + cheerio) for SDG metadata
 │   └── html-to-md.ts     HTML → Markdown for methodology text
 ├── ingest.ts             CLI: run adapters → indicators.db
@@ -266,6 +270,7 @@ bun run typecheck
 - **IndiKit:** the indicator guidance is © [People in Need](https://www.peopleinneed.net) / IndiKit.
 - **UN SDG:** indicator lists and metadata come from the [UN Statistics Division](https://unstats.un.org/sdgs/) (SDG Global Database API and SDG Indicators Metadata Repository); the metadata is written by each indicator's custodian agencies.
 - **World Bank WDI:** indicator definitions and metadata from the [World Bank API](https://datahelpdesk.worldbank.org/knowledgebase/topics/125589), licensed [CC BY 4.0](https://datacatalog.worldbank.org/public-licenses#cc-by).
+- **DHS Program:** indicator definitions from the DHS Program Indicator Data API. Required citation: _The DHS Program Indicator Data API, The Demographic and Health Surveys (DHS) Program. ICF. Originally funded by the United States Agency for International Development (USAID). Available from api.dhsprogram.com._ Each DHS record carries this citation with its access date.
 
 Every record links back to its source page or metadata document. Please cite it. This server only indexes the content to make it searchable.
 

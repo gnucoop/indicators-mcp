@@ -13,6 +13,7 @@ Checks were made on 14 Nov 2026. APIs and terms change, so re-verify before buil
 | ✅ `indikit` — [IndiKit](https://www.indikit.net) | 511 | Project-level indicators with survey questions and calculation guidance. Crawled at 1 request/second (robots.txt). |
 | ✅ `sdg` — [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) | 251 | UN Stats SDG API plus the harmonized metadata documents (.docx). |
 | ✅ `wdi` — [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | 1,498 | Indicator list plus full series metadata from the World Bank API (20 bulk pages, ~10–30 min). CC BY 4.0. |
+| ✅ `dhs` — [DHS Program](https://dhsprogram.com) indicators | 3,237 | Indicator definitions, denominators, topics and tags from the DHS Program Indicator Data API (~10 s). Citation required (included in every record). The API's robots.txt disallows `/rest/dhs/` for crawlers; the adapter makes ~8 documented API requests per run. DHS also runs its own [MCP server](https://api.dhsprogram.com/#/mcp-overview.html) for survey data values. |
 
 ## Next
 
@@ -25,25 +26,22 @@ Load an organisation's own indicator library (project indicators, a donor result
 - **Validation:** missing ids and titles reported per row; Markdown kept as-is in text columns.
 - **Privacy:** private libraries should stay in local or self-hosted deployments, not in the public endpoint's D1.
 
-## Planned
-
-### 🧭 2. WHO — Global Health Observatory + Indicator Metadata Registry (`who`)
-
-Health indicators with official WHO definitions, method of measurement, numerator/denominator and disaggregation.
-
-- **Verified:** the GHO OData API (`ghoapi.azureedge.net/api/Indicator`) is public and lists 3,092 indicators (code and name). The [Indicator Metadata Registry](https://www.who.int/data/gho/indicator-metadata-registry) is online.
-- **Work:** the list only has names; definitions and methods come from the metadata registry pages, which need page parsing (like IndiKit). Matching GHO codes to registry entries needs checking.
-- **To check:** WHO terms of use for reusing the metadata text.
-
-### 🧭 3. DHS Program indicators (`dhs`)
-
-Household-survey indicators (fertility, maternal and child health, nutrition, WASH, gender, HIV) with precise definitions, from the same survey world IndiKit draws on.
-
-- **Verified:** the public REST API (`api.dhsprogram.com/rest/dhs/indicators`) returns 4,655 indicators with label, definition, denominator, measurement type and a three-level topic hierarchy. Small requests work without a key.
-- **To check:** the DHS API terms (registration or API key for bulk use, attribution) and rate limits.
-- **Mapping:** sector = Level1 topic (e.g. Fertility, Nutrition), definition = definition + denominator + measurement type.
-
 ## Check before planning
+
+### ⚠️ WHO — Indicator Metadata Registry (`who`) — on hold: reuse terms
+
+Health indicators with official WHO metadata. Technically ready to build; **on hold because WHO's terms may require written permission** (decision of 14 Nov 2026).
+
+**The problem.** WHO's [website terms of use](https://www.who.int/about/policies/terms-of-use) say: "Reproduction or translation of substantial portions of the web site, or any use other than for educational or other non-commercial purposes, require explicit, prior authorization in writing." Indexing all ~929 registry pages is arguably a "substantial portion", so the cautious reading is that we need WHO's written permission **even though our use is free and non-commercial**. (WHO publications are CC BY-NC-SA 3.0 IGO, but the registry is website content under the terms of use.) This is a flag, not legal advice.
+
+**To unblock:** ask WHO (the GHO / data team) for written permission to index the registry metadata, with attribution and a link to each page, in a free public MCP server. Alternatives: use the adapter locally only and keep WHO out of the public Cloudflare endpoint (needs an export option to skip a source), or index only short fields (definition, unit, link).
+
+**What we already know (checked 14 Nov 2026):**
+- [Indicator Metadata Registry](https://www.who.int/data/gho/indicator-metadata-registry): 929 indicators, one page each (`imr-details/<id>`). No API, but the pages are server-rendered with consistent markup: each field is a `div.metadata-box` with a `div.metadata-title` label.
+- Fields: short name, topic, rationale, definition, disaggregation, method of measurement, method of estimation, preferred data sources, unit of measure, dissemination frequency, comments, links, and the associated GHO data indicators.
+- Crawl: one index page + 929 detail pages, ~16 min at 1 request/second. robots.txt only blocks a list of named bad bots; no crawl-delay.
+- The GHO OData API (`ghoapi.azureedge.net/api/Indicator`) lists 3,092 indicator codes with names only, so the registry is the source worth indexing. The old Athena API has been retired.
+- Planned mapping: id `who:<IMR id>`, sector = WHO topic, level = none; definition = short name, definition, unit, disaggregation; methodology = rationale, measurement, estimation, data sources, comments, links.
 
 ### ⚠️ Sphere Handbook
 
