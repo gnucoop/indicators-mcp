@@ -162,6 +162,8 @@ To refresh the data, see [Updating the data](#updating-the-data). The export reb
 
 ## Updating the data
 
+This section is for refreshing a database you already have. The first time, just run `bun run ingest` ([Quick start](#quick-start)): it creates `indicators.db` for you.
+
 Servers never crawl on their own; every server reads a prebuilt catalog. To pick up changes in the source repositories (new, edited or removed indicators, a new SDG metadata release), rebuild `indicators.db` locally, then push it to wherever the server runs.
 
 ### 1. Rebuild the database
