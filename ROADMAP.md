@@ -14,13 +14,14 @@ Checks were made on 14 Nov 2026. APIs and terms change, so re-verify before buil
 | ✅ `sdg` — [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) | 251 | UN Stats SDG API plus the harmonized metadata documents (.docx). |
 | ✅ `wdi` — [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | 1,498 | Indicator list plus full series metadata from the World Bank API (20 bulk pages, ~10–30 min). CC BY 4.0. |
 | ✅ `dhs` — [DHS Program](https://dhsprogram.com) indicators | 3,237 | Indicator definitions, denominators, topics and tags from the DHS Program Indicator Data API (~10 s). Citation required (included in every record). The API's robots.txt disallows `/rest/dhs/` for crawlers; the adapter makes ~8 documented API requests per run. DHS also runs its own [MCP server](https://api.dhsprogram.com/#/mcp-overview.html) for survey data values. |
+| ✅ `cap` — [EU CAP performance indicators, PMEF 2023–2027](https://agriculture.ec.europa.eu/cap-my-country/performance-agricultural-policy/cap-indicators_en) | 161 | Regulation 2021/2115 Annex I (consolidated, via the EU Publications Office's Cellar service) plus the Commission's result and context/impact fiches (PDFs downloaded by hand into `sources/cap/`, parsed with pdftotext). CC BY 4.0. Output indicator fiches not yet found: output indicators have descriptions only. |
 
 ## Overview of reviewed sources
 
 | Source | Status | Why |
 |---|---|---|
 | CSV / Excel adapter | 🔜 next | Own indicator libraries next to the public ones |
-| EU CAP performance indicators (PMEF 2023–2027) | 🧭 candidate | ~175 output/result/context/impact indicators with fiches; CC BY 4.0; manual extraction; scope question (EU-internal agriculture) |
+| EU CAP performance indicators (PMEF 2023–2027) | ✅ live as `cap` | 161 indicators; output indicator fiches still to find (would add methodology for the 39 output indicators) |
 | EU Global Europe Results Framework (GERF, INTPA) | ⚠️ permission for notes | High value; titles/levels reusable from SWD(2022) 22 (CC BY 4.0); capacity4dev notes forbid remixing |
 | WHO Indicator Metadata Registry | ⚠️ on hold | Website terms: substantial reproduction needs written permission |
 | Sphere Handbook | ⚠️ permission | All rights reserved; posting online needs written permission |
@@ -49,18 +50,6 @@ Load an organisation's own indicator library (project indicators, a donor result
 - **Source name:** chosen per file, e.g. `--source csv:gnucoop --file indicators.xlsx` gives ids like `gnucoop:<id>`.
 - **Validation:** missing ids and titles reported per row; Markdown kept as-is in text columns.
 - **Privacy:** private libraries should stay in local or self-hosted deployments, not in the public endpoint's D1.
-
-## Candidates with an open licence
-
-### 🧭 EU CAP performance indicators — PMEF 2023–2027 (`cap`)
-
-The Performance Monitoring and Evaluation Framework of the EU Common Agricultural Policy (Regulation (EU) 2021/2115, Art. 128 and Annex I): output O.1–O.37, result R.1–R.44, context C.01–C.49 and impact I.1–I.4x indicators, roughly 175 in total, with real output/result/impact levels.
-
-- **Methodology:** the Commission publishes indicator fiches per type (definitions, units, data sources, calculation rules), e.g. [context and impact fiches](https://agriculture.ec.europa.eu/system/files/2023-02/pmef-context-impact-indicators_en.pdf) and [result fiches](https://agriculture.ec.europa.eu/system/files/2023-09/pmef-result-indicators_en.pdf). Calculation rules for output and result indicators are also in Implementing Regulation (EU) 2021/2290; names are in [Annex I of Regulation 2021/2115 on EUR-Lex](https://eur-lex.europa.eu/eli/reg/2021/2115/2026-01-01/eng).
-- **Licence:** Commission content is CC BY 4.0 under Decision 2011/833/EU ([legal notice](https://commission.europa.eu/legal-notice_en)): reuse allowed with credit and an indication of changes. EU legislation on EUR-Lex is freely reusable.
-- **Access:** agriculture.ec.europa.eu answered automated requests with HTTP 429 (edge bot/rate filter); the agridata PMEF API (`api.tech.ec.europa.eu/agrifood/.../indicators_pmef`) serves code lists and values, not definitions, and returned HTTP 500 when tested. So ingestion would be a one-off extraction from the fiche PDFs or EUR-Lex, not a crawler.
-- **Scope question:** these are EU-internal agricultural-policy indicators, not development cooperation, but they form a genuine logframe useful for agri-environment and rural-development projects. Context and impact indicators partly overlap WDI/SDG; output and result indicators are largely unique.
-- **Caveat:** indicator counts come from search summaries (the site blocked direct reading); confirm in a browser before building.
 
 ## Check before planning
 

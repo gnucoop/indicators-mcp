@@ -17,8 +17,12 @@ export class PoliteFetcher {
     private timeoutMs = 120_000,
   ) {}
 
-  async text(url: string, accept = "text/html,application/xhtml+xml"): Promise<string | null> {
-    const res = await this.request(url, accept);
+  async text(
+    url: string,
+    accept = "text/html,application/xhtml+xml",
+    headers: Record<string, string> = {},
+  ): Promise<string | null> {
+    const res = await this.request(url, accept, headers);
     return res ? await res.text() : null;
   }
 
@@ -38,14 +42,14 @@ export class PoliteFetcher {
     return res ? new Uint8Array(await res.arrayBuffer()) : null;
   }
 
-  private async request(url: string, accept: string): Promise<Response | null> {
+  private async request(url: string, accept: string, extra: Record<string, string> = {}): Promise<Response | null> {
     for (let attempt = 1; attempt <= this.retries; attempt++) {
       const wait = this.last + this.delayMs - Date.now();
       if (wait > 0) await Bun.sleep(wait);
       this.last = Date.now();
       try {
         const res = await fetch(url, {
-          headers: { "User-Agent": USER_AGENT, Accept: accept },
+          headers: { "User-Agent": USER_AGENT, Accept: accept, ...extra },
           redirect: "follow",
           signal: AbortSignal.timeout(this.timeoutMs),
         });

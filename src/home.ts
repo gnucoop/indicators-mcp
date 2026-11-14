@@ -26,6 +26,11 @@ const SOURCE_INFO: Record<string, { name: string; url: string; about: string }> 
     url: "https://datatopics.worldbank.org/world-development-indicators/",
     about: "World Development Indicators with World Bank metadata: methodology, limitations, relevance. CC BY 4.0.",
   },
+  cap: {
+    name: "EU CAP indicators (PMEF)",
+    url: "https://agriculture.ec.europa.eu/cap-my-country/performance-agricultural-policy/cap-indicators_en",
+    about: "EU Common Agricultural Policy 2023–2027 impact, result, output and context indicators, with Commission fiches. CC BY 4.0.",
+  },
   dhs: {
     name: "DHS Program",
     url: "https://dhsprogram.com",
@@ -86,12 +91,12 @@ export function renderHome({ origin, catalog, limits }: HomeOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Indicators MCP</title>
-<meta name="description" content="A free MCP server to search, inspect and compare monitoring &amp; evaluation indicators from IndiKit, UN SDG, World Bank WDI and DHS. By Gnucoop.">
+<meta name="description" content="A free MCP server to search, inspect and compare monitoring &amp; evaluation indicators from IndiKit, UN SDG, World Bank WDI, DHS and the EU CAP. By Gnucoop.">
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" type="image/png" href="/icon.png" sizes="512x512">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:title" content="Indicators MCP">
-<meta property="og:description" content="Search and compare M&amp;E indicators from IndiKit, UN SDG, World Bank WDI and DHS in your AI assistant.">
+<meta property="og:description" content="Search and compare M&amp;E indicators from IndiKit, UN SDG, World Bank WDI, DHS and the EU CAP in your AI assistant.">
 <meta property="og:image" content="${o}/icon.png">
 <style>
 :root{--bg:#f7f8fa;--card:#fff;--text:#1f2328;--muted:#5b6470;--line:#e3e6ea;--brand:#2d5381;--brand-ink:#fff;--code:#eef1f5;--dark:#3a3a3a}
@@ -185,7 +190,7 @@ ${TOOLS.map(([n, d]) => `    <li><code>${n}</code><div class="muted">${escapeHtm
 
 <footer>
   <div class="by">Made by <a href="${GNUCOOP_URL}" rel="noopener">Gnucoop</a> — IT for non profit · <a href="${PROJECT_URL}" rel="noopener">github.com/gnucoop/indicators-mcp</a></div>
-  <div>Code licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">AGPL-3.0-or-later</a>. Indicator content © its publishers: IndiKit (People in Need), UN Statistics Division and custodian agencies, World Bank (CC BY 4.0), and The DHS Program Indicator Data API, The Demographic and Health Surveys (DHS) Program, ICF.</div>
+  <div>Code licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">AGPL-3.0-or-later</a>. Indicator content © its publishers: IndiKit (People in Need), UN Statistics Division and custodian agencies, World Bank (CC BY 4.0), The DHS Program Indicator Data API, The Demographic and Health Surveys (DHS) Program, ICF, and the European Commission (CC BY 4.0).</div>
   <div>v${SERVER_VERSION} · JSON for API clients at <code>${o}/</code> with <code>Accept: application/json</code></div>
 </footer>
 </main>

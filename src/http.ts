@@ -118,7 +118,7 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
       return jsonResponse({
         name: SERVER_NAME,
         version: SERVER_VERSION,
-        description: "MCP server to search, inspect and compare M&E indicators (IndiKit, UN SDG, World Bank WDI, DHS Program).",
+        description: "MCP server to search, inspect and compare M&E indicators (IndiKit, UN SDG, World Bank WDI, DHS Program, EU CAP).",
         mcp_endpoint: `${origin}/mcp`,
         icon: `${origin}/icon.png`,
         source_code: PROJECT_URL,

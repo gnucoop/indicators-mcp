@@ -22,6 +22,7 @@ const SERVER_INSTRUCTIONS = `Search, inspect and compare Monitoring & Evaluation
 - sdg: UN SDG global indicator framework — its global indicators (251 entries in the UN Stats API), with official UN metadata (definition, computation, data sources); sectors are goals such as "SDG 6 Clean Water and Sanitation"; no logframe level.
 - wdi: World Bank World Development Indicators — national statistics (~1,500) with World Bank metadata (definition, methodology, limitations, development relevance); sectors are WDI topics such as "Health", "Education", "Gender"; no logframe level.
 - dhs: DHS Program (Demographic and Health Surveys) — household-survey indicator definitions (~3,200) with denominator, measurement and topic; sectors such as "Water and Sanitation", "Child Nutrition"; no logframe level. Short records: cite the DHS Program as each record says.
+- cap: EU Common Agricultural Policy performance indicators (PMEF 2023–2027, Regulation 2021/2115 Annex I) — impact, result (level Outcome), output and context indicators with the Commission's fiches (definition, unit, methodology, data sources); sectors such as "CAP – Climate change", "CAP – Outputs".
 Without a source filter, search results mix sources (no source fills more than half the list); pass source to see one repository only.
 Comparing a project indicator (IndiKit) with its SDG, WDI or DHS counterpart is a common use of compare_indicators.
 Typical flow: list_catalog_metadata to discover valid sources/sectors/levels → search_indicators (short keyword queries work best) → get_indicator_details or compare_indicators for full definitions and data-collection methodology.
@@ -115,9 +116,9 @@ export function registerTools(server: McpServer, repo: IndicatorRepo): void {
         "Filters are optional; use list_catalog_metadata to see valid values. Pass an empty query to list by filters only.",
       inputSchema: {
         query: z.string().max(500).describe("Keywords to search for (prefix-matched; all terms first, then any term)"),
-        source: z.string().optional().describe("Repository id: 'indikit', 'sdg', 'wdi' or 'dhs'"),
+        source: z.string().optional().describe("Repository id: 'indikit', 'sdg', 'wdi', 'dhs' or 'cap'"),
         sector: z.string().optional().describe("Sector name or part of it, e.g. 'WASH', 'Food Security', or an SDG goal such as 'SDG 6'"),
-        level: z.string().optional().describe("Logframe level: Process, Output, Outcome or Impact (IndiKit only; the other sources have none)"),
+        level: z.string().optional().describe("Logframe level: Process, Output, Outcome or Impact (IndiKit and CAP; the other sources have none)"),
         limit: z.number().int().min(1).max(MAX_LIMIT).default(10).describe(`Max results (1-${MAX_LIMIT}, default 10)`),
       },
       annotations: { title: "Search indicators", ...READ_ONLY },
@@ -161,7 +162,7 @@ export function registerTools(server: McpServer, repo: IndicatorRepo): void {
       description:
         "Available sources, sectors and logframe levels with indicator counts, to discover valid filter values for search_indicators.",
       inputSchema: {
-        source: z.string().optional().describe("Restrict sector/level counts to one source: 'indikit', 'sdg', 'wdi' or 'dhs'"),
+        source: z.string().optional().describe("Restrict sector/level counts to one source: 'indikit', 'sdg', 'wdi', 'dhs' or 'cap'"),
       },
       annotations: { title: "List catalog metadata", ...READ_ONLY },
     },
