@@ -1,6 +1,6 @@
 # indicators-mcp
 
-An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators**. It starts with [IndiKit](https://www.indikit.net) (about 500 indicators across 25 sectors), and other repositories (UN SDG, WHO, World Bank, Sphere, local CSV/PDF) can be added as adapters.
+An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, inspect and compare Monitoring & Evaluation (M&E) indicators** from several repositories at once. It currently covers [IndiKit](https://www.indikit.net) and the [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/). Other repositories (WHO, World Bank, Sphere, local CSV/PDF) can be added as adapters.
 
 - **Fast and offline:** SQLite FTS5 full-text search, with no vector database and no live scraping during a conversation.
 - **Two ways to use it:** a local **stdio** server, or a public **HTTP** endpoint (Streamable HTTP) on Docker or Cloudflare Workers.
@@ -13,6 +13,15 @@ An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, insp
 | **Limits** | None | 30 tool calls per minute per IP (see [Limits](#limits)) |
 
 **Hosted endpoint:** `https://indicators-mcp.gnucoop.workers.dev/mcp` (free, no sign-up, running on Cloudflare Workers)
+
+## Sources
+
+| `source` | Repository | Indicators | What a record contains | Sectors |
+|---|---|---|---|---|
+| `indikit` | [IndiKit](https://www.indikit.net) (People in Need) | 511 | Project-level indicators: wording, purpose, survey questions, calculation, disaggregation, caveats. Logframe level (Output, Outcome, Impact, Process) | 25 humanitarian/development sectors (WASH, Food Security, Nutrition…) |
+| `sdg` | [UN SDG global indicator framework](https://unstats.un.org/sdgs/indicators/indicators-list/) (UN Statistics Division) | 251 | Goal, target, tier, custodian agencies and data series, plus the official [metadata](https://unstats.un.org/sdgs/metadata/): definition, method of computation, rationale, limitations, data sources, disaggregation. No logframe level | The 17 goals, e.g. `SDG 6 Clean Water and Sanitation` |
+
+Ids are namespaced: `indikit:51-access-to-drinking-water`, `sdg:6.1.1`. A typical use is comparing a project indicator with its SDG counterpart, e.g. `compare_indicators` with `["indikit:51-access-to-drinking-water", "sdg:6.1.1"]`.
 
 ## Tools
 
@@ -35,17 +44,21 @@ Requires [Bun](https://bun.com) ≥ 1.2 (`brew install bun`).
 
 ```bash
 bun install
-bun run ingest             # full IndiKit crawl, ~10–15 min (1 request/second, per robots.txt)
+bun run ingest             # all sources, ~20 min in total (1 request/second)
 bun run start              # stdio server
 ```
 
 Ingest options:
 
 ```bash
-bun run ingest --sector wash --limit 15     # quick test run
-bun run ingest --fresh                      # drop this source's rows first
+bun run ingest --source sdg                          # one source (~6 min); or --source indikit (~10–15 min)
+bun run ingest --source indikit --sector wash --limit 15   # quick test run
+bun run ingest --source sdg --sector 6               # one SDG goal, by number or name ("water")
+bun run ingest --fresh                               # drop each source's rows before ingesting it
 bun run ingest --help
 ```
+
+If one repository is unreachable, the others are still ingested and the command exits with an error code.
 
 ## Use it in your MCP client
 
@@ -141,25 +154,25 @@ To refresh the data, see [Updating the data](#updating-the-data). The export reb
 
 ## Updating the data
 
-Servers never crawl on their own; every server reads a prebuilt catalog. To pick up changes on IndiKit (new, edited or removed indicators), rebuild `indicators.db` locally, then push it to wherever the server runs.
+Servers never crawl on their own; every server reads a prebuilt catalog. To pick up changes in the source repositories (new, edited or removed indicators, a new SDG metadata release), rebuild `indicators.db` locally, then push it to wherever the server runs.
 
 ### 1. Rebuild the database
 
-Crawl into a new file, so your current database keeps working if the crawl fails partway:
+Crawl all sources into a new file, so your current database keeps working if the crawl fails partway:
 
 ```bash
 bun run ingest --db indicators.new.db
 ```
 
-A full crawl takes about 10–15 minutes (1 request/second, as IndiKit's robots.txt asks). Check the summary at the end: `0 failed`, and the same number of rows in the indicators table and the FTS index. Then replace the old file:
+A full crawl takes about 20 minutes: IndiKit 10–15 minutes and UN SDG about 6 (1 request/second, as IndiKit's robots.txt asks; the same pace is used for UN Stats). Check the summary at the end: `0 failed`, and the same number of rows in the indicators table and the FTS index. Then replace the old file:
 
 ```bash
 mv indicators.new.db indicators.db
 ```
 
-Starting from an empty file also drops indicators that IndiKit has removed. A re-run into the existing `indicators.db` updates and adds records, but keeps removed ones. To remove them in place instead, use `bun run ingest --fresh`; it deletes IndiKit's rows before crawling, so the database stays incomplete until the crawl finishes.
+Starting from an empty file also drops indicators that a repository has removed. A re-run into the existing `indicators.db` updates and adds records, but keeps removed ones. To remove them in place instead, use `bun run ingest --fresh`; it deletes each source's rows before crawling it, so the database stays incomplete until the crawl finishes.
 
-To refresh a single sector, run `bun run ingest --sector wash`. Sector lists already in the database are merged, not overwritten.
+To refresh one source, add `--source indikit` or `--source sdg`; the other source's rows stay as they are. To refresh a single sector, add `--sector wash` (or `--sector 6` for an SDG goal). Sector lists already in the database are merged, not overwritten.
 
 ### 2. Push it to each deployment
 
@@ -201,7 +214,10 @@ src/
 ├── db.ts                 bun:sqlite: open, upsert (ON CONFLICT DO UPDATE), counts
 ├── adapters/
 │   ├── types.ts          Adapter interface: add new repositories here
+│   ├── http.ts           Polite fetcher shared by adapters (delay, retries, User-Agent)
 │   ├── indikit.ts        indikit.net crawler/parser (fetch + cheerio)
+│   ├── sdg.ts            UN SDG API + harmonized metadata documents
+│   ├── docx.ts           Minimal .docx reader (fflate + cheerio) for SDG metadata
 │   └── html-to-md.ts     HTML → Markdown for methodology text
 ├── ingest.ts             CLI: run adapters → indicators.db
 ├── repo/
@@ -234,4 +250,7 @@ bun run typecheck
 
 ## Credits and license
 
-The indicator guidance is © [People in Need](https://www.peopleinneed.net) / IndiKit, and every record links back to its source page. Please cite it. This server only indexes the content to make it searchable. Code: MIT.
+- **IndiKit:** the indicator guidance is © [People in Need](https://www.peopleinneed.net) / IndiKit.
+- **UN SDG:** indicator lists and metadata come from the [UN Statistics Division](https://unstats.un.org/sdgs/) (SDG Global Database API and SDG Indicators Metadata Repository); the metadata is written by each indicator's custodian agencies.
+
+Every record links back to its source page or metadata document. Please cite it. This server only indexes the content to make it searchable. Code: MIT.

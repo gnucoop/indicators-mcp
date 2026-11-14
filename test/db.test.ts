@@ -121,6 +121,18 @@ describe("repository", () => {
     expect((await repo.search({ query: "water", level: "100%_" })).results).toHaveLength(0);
   });
 
+  test("SDG goal-number sector filter does not match other goals", async () => {
+    const db = freshDb();
+    upsertMany(db, [
+      { ...FIXTURES[3]!, id: "sdg:1.1.1", sector: "SDG 1 No Poverty", title: "Poverty line" },
+      { ...FIXTURES[3]!, id: "sdg:10.1.1", sector: "SDG 10 Reduced Inequalities", title: "Income growth" },
+    ]);
+    const repo = bunSqliteRepo(db);
+    expect((await repo.search({ query: "", sector: "SDG 1" })).results.map((r) => r.id)).toEqual(["sdg:1.1.1"]);
+    expect((await repo.search({ query: "", sector: "sdg10" })).results.map((r) => r.id)).toEqual(["sdg:10.1.1"]);
+    expect((await repo.search({ query: "", sector: "poverty" })).results.map((r) => r.id)).toEqual(["sdg:1.1.1"]);
+  });
+
   test("malicious-looking queries never throw", async () => {
     const repo = bunSqliteRepo(freshDb());
     for (const q of ['"', "*", "AND OR NOT", "a\" OR 1=1 --", "(((", "NEAR(", "'; DROP TABLE indicators; --"]) {

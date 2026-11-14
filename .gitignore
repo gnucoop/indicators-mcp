@@ -1,9 +1,11 @@
 node_modules/
-indicators.db
-indicators.db-*
+*.db
+*.db-*
 dist/
 .wrangler/
 .dev.vars
 *.log
 .DS_Store
 wrangler.local.toml
+*.sqlite
+*.sqlite3

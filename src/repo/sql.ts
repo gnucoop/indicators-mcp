@@ -77,8 +77,17 @@ export function buildSearchSql(params: SearchParams, fts: string | null): { sql:
     args.push(params.source.trim().toLowerCase());
   }
   if (params.sector?.trim()) {
-    where.push("i.sector LIKE ? ESCAPE '\\'");
-    args.push(likeContains(params.sector.trim()));
+    const sector = params.sector.trim();
+    // "SDG 1" / "sdg1" must not match SDG 10–17: anchor the number to the
+    // start of a sector name (sector values are ", "-joined lists).
+    const goal = sector.match(/^sdg\s*(\d{1,2})$/i);
+    if (goal) {
+      where.push("(i.sector LIKE ? OR i.sector LIKE ? OR i.sector = ?)");
+      args.push(`SDG ${goal[1]} %`, `%, SDG ${goal[1]} %`, `SDG ${goal[1]}`);
+    } else {
+      where.push("i.sector LIKE ? ESCAPE '\\'");
+      args.push(likeContains(sector));
+    }
   }
   if (params.level?.trim()) {
     where.push("i.level LIKE ? ESCAPE '\\'");

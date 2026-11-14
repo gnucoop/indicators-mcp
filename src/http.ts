@@ -75,7 +75,7 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
       return jsonResponse({
         name: SERVER_NAME,
         version: SERVER_VERSION,
-        description: "MCP server to search, inspect and compare M&E indicators (IndiKit + more).",
+        description: "MCP server to search, inspect and compare M&E indicators (IndiKit and UN SDG).",
         mcp_endpoint: `${url.origin}/mcp`,
         transport: "streamable-http (stateless, JSON responses)",
         tools: ["search_indicators", "get_indicator_details", "list_catalog_metadata", "compare_indicators"],

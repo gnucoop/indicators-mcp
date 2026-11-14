@@ -21,6 +21,8 @@ export function openDb(path = defaultDbPath(), opts: { readonly?: boolean } = {}
     return new Database(path, { readonly: true });
   }
   const db = new Database(path, { create: true });
+  // Wait for readers (e.g. a running stdio server) instead of failing at once.
+  db.run("PRAGMA busy_timeout = 10000");
   db.run("PRAGMA journal_mode = WAL");
   db.run("PRAGMA foreign_keys = ON");
   initSchema(db);

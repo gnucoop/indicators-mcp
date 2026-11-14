@@ -15,10 +15,9 @@ import * as cheerio from "cheerio";
 import type { UnifiedIndicator } from "../types.ts";
 import type { Adapter, AdapterStats, FetchOptions } from "./types.ts";
 import { htmlToMarkdown, tidy } from "./html-to-md.ts";
+import { PoliteFetcher } from "./http.ts";
 
 export const INDIKIT_BASE = "https://www.indikit.net";
-export const USER_AGENT =
-  "indicators-mcp/0.1 (open-source M&E indicator index for MCP; respects robots.txt crawl-delay)";
 
 const LEVELS = ["Process", "Output", "Outcome", "Impact"];
 
@@ -33,42 +32,6 @@ export interface IndicatorLink {
   url: string;
   sector: string;
   group: string | null;
-}
-
-/** Fetch with a minimum gap between requests, retries and a clear User-Agent. */
-export class PoliteFetcher {
-  private last = 0;
-  constructor(
-    private delayMs: number,
-    private log: (m: string) => void = console.error,
-    private retries = 3,
-  ) {}
-
-  async text(url: string): Promise<string | null> {
-    for (let attempt = 1; attempt <= this.retries; attempt++) {
-      const wait = this.last + this.delayMs - Date.now();
-      if (wait > 0) await Bun.sleep(wait);
-      this.last = Date.now();
-      try {
-        const res = await fetch(url, {
-          headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
-          redirect: "follow",
-          signal: AbortSignal.timeout(30_000),
-        });
-        if (res.ok) return await res.text();
-        if (res.status === 404 || res.status === 410) {
-          this.log(`  ✗ ${res.status} ${url}`);
-          return null;
-        }
-        this.log(`  ! HTTP ${res.status} for ${url} (attempt ${attempt}/${this.retries})`);
-      } catch (err) {
-        this.log(`  ! ${(err as Error).message} for ${url} (attempt ${attempt}/${this.retries})`);
-      }
-      await Bun.sleep(this.delayMs * 2 ** attempt);
-    }
-    this.log(`  ✗ giving up on ${url}`);
-    return null;
-  }
 }
 
 function slugFromUrl(url: string): string {
