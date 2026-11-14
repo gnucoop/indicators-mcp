@@ -8,9 +8,11 @@ An [MCP](https://modelcontextprotocol.io) server that lets an LLM **search, insp
 
 | | Local (stdio) | Hosted (HTTP) |
 |---|---|---|
-| **How** | `bun run start` from your MCP client | Point your client at `https://<host>/mcp` |
+| **How** | `bun run start` from your MCP client | Point your client at the hosted endpoint below |
 | **Best for** | Unlimited use, offline | Zero setup, sharing with a team |
-| **Limits** | None | Per-IP tool-call quota (see [Limits](#limits)) |
+| **Limits** | None | 30 tool calls per minute per IP (see [Limits](#limits)) |
+
+**Hosted endpoint:** `https://indicators-mcp.gnucoop.workers.dev/mcp` (free, no sign-up, running on Cloudflare Workers)
 
 ## Tools
 
@@ -73,15 +75,21 @@ claude mcp add indicators -- bun run /ABSOLUTE/PATH/TO/indicators-mcp/src/server
 
 ### Hosted (HTTP)
 
+The public endpoint is `https://indicators-mcp.gnucoop.workers.dev/mcp`. If you deploy your own copy, use your URL instead.
+
+Claude Desktop, Cursor and other clients that read a JSON config:
+
 ```json
-{ "mcpServers": { "indicators": { "type": "http", "url": "https://<host>/mcp" } } }
+{ "mcpServers": { "indicators": { "type": "http", "url": "https://indicators-mcp.gnucoop.workers.dev/mcp" } } }
 ```
+
+Claude Code:
 
 ```bash
-claude mcp add --transport http indicators https://<host>/mcp
+claude mcp add --transport http indicators https://indicators-mcp.gnucoop.workers.dev/mcp
 ```
 
-In Claude.ai or ChatGPT, add a custom connector with the URL `https://<host>/mcp` (no auth).
+In Claude.ai or ChatGPT, add a custom connector with the URL `https://indicators-mcp.gnucoop.workers.dev/mcp` (no auth).
 
 ## Run as an HTTP server
 
