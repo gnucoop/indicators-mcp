@@ -7,17 +7,9 @@
  */
 import { parseArgs } from "node:util";
 import { countRows, defaultDbPath, deleteSource, getSector, openDb, upsertMany } from "./db.ts";
-import { IndiKitAdapter } from "./adapters/indikit.ts";
-import { SdgAdapter } from "./adapters/sdg.ts";
-import { WdiAdapter } from "./adapters/wdi.ts";
+import { ADAPTERS } from "./adapters/index.ts";
 import type { Adapter, AdapterStats } from "./adapters/types.ts";
 import type { UnifiedIndicator } from "./types.ts";
-
-const ADAPTERS: Record<string, () => Adapter> = {
-  indikit: () => new IndiKitAdapter(),
-  sdg: () => new SdgAdapter(),
-  wdi: () => new WdiAdapter(),
-};
 
 const log = (m: string) => console.error(m);
 

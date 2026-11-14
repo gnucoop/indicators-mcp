@@ -62,6 +62,12 @@ bun run ingest --help
 
 If one repository is unreachable, the others are still ingested and the command exits with an error code.
 
+To see which sources exist and how many indicators of each your local database holds:
+
+```bash
+bun run source list
+```
+
 ## Use it in your MCP client
 
 ### Local (stdio)
@@ -215,7 +221,8 @@ src/
 ├── schema.ts             SQLite/D1 schema: indicators + indicators_fts (FTS5) + sync triggers
 ├── db.ts                 bun:sqlite: open, upsert (ON CONFLICT DO UPDATE), counts
 ├── adapters/
-│   ├── types.ts          Adapter interface: add new repositories here
+│   ├── index.ts          Adapter registry: register new repositories here
+│   ├── types.ts          Adapter interface
 │   ├── http.ts           Polite fetcher shared by adapters (delay, retries, User-Agent)
 │   ├── indikit.ts        indikit.net crawler/parser (fetch + cheerio)
 │   ├── sdg.ts            UN SDG API + harmonized metadata documents
@@ -223,6 +230,7 @@ src/
 │   ├── docx.ts           Minimal .docx reader (fflate + cheerio) for SDG metadata
 │   └── html-to-md.ts     HTML → Markdown for methodology text
 ├── ingest.ts             CLI: run adapters → indicators.db
+├── source.ts             CLI: list sources and their local indicator counts
 ├── repo/
 │   ├── sql.ts            Backend-agnostic queries, FTS sanitiser, ranking
 │   ├── bun-sqlite.ts     Repo over bun:sqlite
@@ -240,7 +248,7 @@ scripts/
 
 **Canonical record:** `id` (namespaced, e.g. `indikit:51-access-to-drinking-water`), `source`, `title`, `sector`, `level`, `definition`, `methodology`, `url`. An indicator listed under several sectors, or valid at several levels, stores comma-joined values (`"Output, Outcome"`), and the filters match any of them.
 
-**Adding a repository:** implement `Adapter` in `src/adapters/<name>.ts`. It yields `UnifiedIndicator`s with ids `<source>:<local id>`. Register it in `ADAPTERS` in `src/ingest.ts`, then run `bun run ingest --source <name>`.
+**Adding a repository:** implement `Adapter` in `src/adapters/<name>.ts`. It yields `UnifiedIndicator`s with ids `<source>:<local id>`. Register it in `ADAPTERS` in `src/adapters/index.ts`, then run `bun run ingest --source <name>`.
 
 **stdio safety:** the stdio server writes only JSON-RPC to stdout. All logs go to stderr, and `console.log` is redirected to stderr as a safety net.
 
