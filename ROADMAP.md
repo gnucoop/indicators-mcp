@@ -43,9 +43,19 @@ Health indicators with official WHO metadata. Technically ready to build; **on h
 - The GHO OData API (`ghoapi.azureedge.net/api/Indicator`) lists 3,092 indicator codes with names only, so the registry is the source worth indexing. The old Athena API has been retired.
 - Planned mapping: id `who:<IMR id>`, sector = WHO topic, level = none; definition = short name, definition, unit, disaggregation; methodology = rationale, measurement, estimation, data sources, comments, links.
 
-### ⚠️ Sphere Handbook
+### ⚠️ Sphere Handbook (`sphere`) — needs written permission
 
-Valuable humanitarian minimum standards with key indicators, but the content is copyrighted, so we'd need to confirm reuse terms before indexing it.
+Humanitarian minimum standards with key indicators and guidance notes (WASH, food security and nutrition, shelter, health, protection). **Needs Sphere's prior written permission** (checked 14 Nov 2026).
+
+**The terms.** Sphere's [intellectual property page](https://www.spherestandards.org/intellectual-property/) lists the 2018 Handbook as "© Sphere Association, 2018. All rights reserved." It may be reproduced without a fee for educational purposes (training, research, programme activities) with acknowledgement, but not resold. Other uses, **including posting online**, reuse in other publications, translation and adaptation, need prior written permission from info@spherestandards.org. A public MCP server serving the handbook's indicators counts as posting online. Sphere's general statement that its resources are CC BY 4.0 "unless otherwise stated" does not appear to cover the Handbook, which carries its own all-rights-reserved notice. (Quoted via search results citing that page; Sphere's sites block automated access, so re-check the wording in a browser.)
+
+**Other owners.** The Core Humanitarian Standard chapter is co-owned by the CHS Alliance, Sphere Association and Groupe URD, so permission must cover it too, or it is left out.
+
+**Practical issues.**
+- Sphere's sites (spherestandards.org, handbook.spherestandards.org) return HTTP 403 to scripted requests and show a Cloudflare bot check in browsers. Even with permission we'd need an agreed way to get the content (a file from Sphere, or permission to use the published PDF).
+- A revision of the 2018 edition was launched in March 2026 (numbering and release date unclear). A permission request could cover the new edition too.
+
+**To unblock:** ask Sphere (info@spherestandards.org) for written permission to index the key indicators and guidance notes, with attribution and a link back, in a free public MCP server; ask whether it can extend to the upcoming edition, and how to obtain the content.
 
 ### ⚠️ EU Global Europe Results Framework (INTPA)
 
