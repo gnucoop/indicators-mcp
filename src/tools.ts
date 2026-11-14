@@ -4,7 +4,8 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerOptions } from "@modelcontextprotocol/sdk/server/index.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, Icon } from "@modelcontextprotocol/sdk/types.js";
+import { PROJECT_URL } from "./icons.ts";
 import { z } from "zod";
 import type { IndicatorRepo } from "./repo/types.ts";
 import { MAX_LIMIT } from "./repo/sql.ts";
@@ -80,11 +81,19 @@ export function capRecords<T extends UnifiedIndicator>(records: T[], maxChars = 
 export interface CreateServerOptions {
   /** Workers can't use the default (ajv, code-generating) validator. */
   jsonSchemaValidator?: ServerOptions["jsonSchemaValidator"];
+  /** Server icons shown by MCP clients (see src/icons.ts). */
+  icons?: Icon[];
 }
 
 export function createServer(repo: IndicatorRepo, opts: CreateServerOptions = {}): McpServer {
   const server = new McpServer(
-    { name: SERVER_NAME, version: SERVER_VERSION },
+    {
+      name: SERVER_NAME,
+      title: "Indicators MCP",
+      version: SERVER_VERSION,
+      websiteUrl: PROJECT_URL,
+      ...(opts.icons?.length && { icons: opts.icons }),
+    },
     {
       instructions: SERVER_INSTRUCTIONS,
       capabilities: { tools: {} },

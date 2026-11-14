@@ -7,6 +7,7 @@
  */
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { IndicatorRepo } from "./repo/types.ts";
+import { httpIcons, ICON_FILES, PROJECT_URL } from "./icons.ts";
 import { createServer, SERVER_NAME, SERVER_VERSION, type CreateServerOptions } from "./tools.ts";
 
 const MAX_BODY_BYTES = 256 * 1024;
@@ -71,12 +72,21 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
 
     if (path === "/health") return jsonResponse({ status: "ok", name: SERVER_NAME, version: SERVER_VERSION });
 
+    const iconFile = ICON_FILES[path];
+    if (iconFile && (req.method === "GET" || req.method === "HEAD")) {
+      return new Response(req.method === "HEAD" ? null : iconFile.body, {
+        headers: { "Content-Type": iconFile.contentType, "Cache-Control": "public, max-age=86400", ...CORS_HEADERS },
+      });
+    }
+
     if (path === "/" && req.method === "GET") {
       return jsonResponse({
         name: SERVER_NAME,
         version: SERVER_VERSION,
         description: "MCP server to search, inspect and compare M&E indicators (IndiKit, UN SDG, World Bank WDI, DHS Program).",
         mcp_endpoint: `${url.origin}/mcp`,
+        icon: `${url.origin}/icon.png`,
+        source_code: PROJECT_URL,
         transport: "streamable-http (stateless, JSON responses)",
         tools: ["search_indicators", "get_indicator_details", "list_catalog_metadata", "compare_indicators"],
         ...opts.about,
@@ -117,7 +127,7 @@ export function createHttpHandler(opts: HttpHandlerOptions) {
       }
     }
 
-    const server = createServer(opts.repo, opts.serverOptions);
+    const server = createServer(opts.repo, { icons: httpIcons(url.origin), ...opts.serverOptions });
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,

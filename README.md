@@ -242,6 +242,8 @@ src/
 │   ├── bun-sqlite.ts     Repo over bun:sqlite
 │   └── d1.ts             Repo over Cloudflare D1
 ├── tools.ts              The 4 MCP tools + output cap
+├── icons.ts              Server icon: HTTP routes + MCP server-info icons
+├── icon-data.ts          Generated: icons from assets/ as base64
 ├── http.ts               Shared stateless Streamable HTTP handler (Web Request/Response)
 ├── rate-limit.ts         In-memory per-IP limiter (Bun HTTP)
 ├── server.ts             stdio entrypoint
@@ -249,12 +251,15 @@ src/
 └── worker.ts             Cloudflare Workers entrypoint
 scripts/
 ├── export-d1.ts          indicators.db → dist/d1.sql
+├── embed-icons.ts        assets/ → src/icon-data.ts
 └── smoke-http.ts         End-to-end check of any /mcp endpoint with the official MCP client
 ```
 
 **Canonical record:** `id` (namespaced, e.g. `indikit:51-access-to-drinking-water`), `source`, `title`, `sector`, `level`, `definition`, `methodology`, `url`. An indicator listed under several sectors, or valid at several levels, stores comma-joined values (`"Output, Outcome"`), and the filters match any of them.
 
 **Adding a repository:** implement `Adapter` in `src/adapters/<name>.ts`. It yields `UnifiedIndicator`s with ids `<source>:<local id>`. Register it in `ADAPTERS` in `src/adapters/index.ts`, then run `bun run ingest --source <name>`.
+
+**Icon:** the server declares the Gnucoop logo symbol (`assets/`) in its MCP server info, so clients that support icons show it instead of a default one. The HTTP servers also serve it at `/favicon.ico`, `/icon.png` (512×512) and `/icon-128.png`; the stdio server sends it inline. To change it, replace the files in `assets/` and run `bun run scripts/embed-icons.ts`.
 
 **stdio safety:** the stdio server writes only JSON-RPC to stdout. All logs go to stderr, and `console.log` is redirected to stderr as a safety net.
 

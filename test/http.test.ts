@@ -93,3 +93,42 @@ describe("HTTP transport", () => {
     expect(root.mcp_endpoint).toBe("http://localhost/mcp");
   });
 });
+
+describe("icons", () => {
+  test("serves favicon.ico and PNG icons with caching", async () => {
+    const handle = makeHandler();
+    const ico = await handle(new Request("http://localhost/favicon.ico"));
+    expect(ico.status).toBe(200);
+    expect(ico.headers.get("content-type")).toBe("image/x-icon");
+    expect(ico.headers.get("cache-control")).toContain("max-age");
+    expect([...new Uint8Array(await ico.arrayBuffer()).slice(0, 4)]).toEqual([0, 0, 1, 0]);
+    for (const path of ["/icon.png", "/icon-128.png"]) {
+      const png = await handle(new Request(`http://localhost${path}`));
+      expect(png.headers.get("content-type")).toBe("image/png");
+      expect([...new Uint8Array(await png.arrayBuffer()).slice(0, 4)]).toEqual([137, 80, 78, 71]);
+    }
+    const head = await handle(new Request("http://localhost/icon.png", { method: "HEAD" }));
+    expect(head.status).toBe(200);
+  });
+
+  test("server info declares icons on the request's origin", async () => {
+    const handle = makeHandler();
+    const res = await handle(
+      new Request("https://example.org/mcp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "t", version: "0" } },
+        }),
+      }),
+    );
+    const info = ((await res.json()) as { result: { serverInfo: { icons?: { src: string }[]; websiteUrl?: string; title?: string } } })
+      .result.serverInfo;
+    expect(info.icons?.map((i) => i.src)).toEqual(["https://example.org/icon.png", "https://example.org/icon-128.png"]);
+    expect(info.websiteUrl).toBe("https://github.com/gnucoop/indicators-mcp");
+    expect(info.title).toBe("Indicators MCP");
+  });
+});
