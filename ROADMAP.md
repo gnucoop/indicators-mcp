@@ -15,6 +15,30 @@ Checks were made on 14 Nov 2026. APIs and terms change, so re-verify before buil
 | ✅ `wdi` — [World Bank World Development Indicators](https://datatopics.worldbank.org/world-development-indicators/) | 1,498 | Indicator list plus full series metadata from the World Bank API (20 bulk pages, ~10–30 min). CC BY 4.0. |
 | ✅ `dhs` — [DHS Program](https://dhsprogram.com) indicators | 3,237 | Indicator definitions, denominators, topics and tags from the DHS Program Indicator Data API (~10 s). Citation required (included in every record). The API's robots.txt disallows `/rest/dhs/` for crawlers; the adapter makes ~8 documented API requests per run. DHS also runs its own [MCP server](https://api.dhsprogram.com/#/mcp-overview.html) for survey data values. |
 
+## Overview of reviewed sources
+
+| Source | Status | Why |
+|---|---|---|
+| CSV / Excel adapter | 🔜 next | Own indicator libraries next to the public ones |
+| EU CAP performance indicators (PMEF 2023–2027) | 🧭 candidate | ~175 output/result/context/impact indicators with fiches; CC BY 4.0; manual extraction; scope question (EU-internal agriculture) |
+| EU Global Europe Results Framework (GERF, INTPA) | ⚠️ permission for notes | High value; titles/levels reusable from SWD(2022) 22 (CC BY 4.0); capacity4dev notes forbid remixing |
+| WHO Indicator Metadata Registry | ⚠️ on hold | Website terms: substantial reproduction needs written permission |
+| Sphere Handbook | ⚠️ permission | All rights reserved; posting online needs written permission |
+| Sendai Framework indicators | ⚠️ mostly covered | Targets A–E already in `sdg`; UN document reuse unconfirmed |
+| IFAD Core Outcome Indicators | ⚠️ permission | Good agri/rural content; bot wall; restrictive terms |
+| PRIMA KPI handbook | ⚠️ permission | Agri-food/water R&I KPIs with methods; PDF only; no licence stated |
+| CALP multipurpose cash outcome indicators | ⚠️ permission | Small set, heavy IndiKit overlap; no licence found; Cloudflare |
+| UNICEF Strategic Plan Goal Area 3 manual | ⚠️ permission | Outdated (2018–2021); restrictive terms; outcome indicators overlap SDG/MICS |
+| DeSIRA global M&E framework | ⚠️ permission | 28 niche agri-research indicators; PDF only; capacity4dev terms |
+| Former USAID standard indicators / old Humanitarian Indicator Registry | ⚠️ verify | Believed offline or retired |
+| FAO SDG data portal | ✓ already covered | Same SDG indicators and UN metadata as `sdg`; CC BY 4.0 links could be added |
+| World Bank data catalogue beyond WDI | ✓ partly covered | `wdi` covers World Development Indicators; other World Bank databases not indexed |
+| WHO GHO indicator list | ✓ see WHO above | Names only; metadata is in the registry (on hold) |
+| Atlas4Dev (AICS) | ✗ not planned | Statistics atlas without M&E metadata; duplicates WDI/SDG |
+| EU CAP context indicators (old CMEF) | ✗ not planned | Legacy set frozen at 2019, replaced by PMEF |
+| UNDP "The Indicators We Want" | ✗ not planned | 2015 SDG 16 proposal list, superseded by the official SDG indicators |
+| UNESCO TVET indicators (2012, probable identity) | ✗ not planned | Old list-type framework; licence and identity unconfirmed |
+
 ## Next
 
 ### 🔜 1. CSV / Excel adapter (`csv`)
@@ -25,6 +49,18 @@ Load an organisation's own indicator library (project indicators, a donor result
 - **Source name:** chosen per file, e.g. `--source csv:gnucoop --file indicators.xlsx` gives ids like `gnucoop:<id>`.
 - **Validation:** missing ids and titles reported per row; Markdown kept as-is in text columns.
 - **Privacy:** private libraries should stay in local or self-hosted deployments, not in the public endpoint's D1.
+
+## Candidates with an open licence
+
+### 🧭 EU CAP performance indicators — PMEF 2023–2027 (`cap`)
+
+The Performance Monitoring and Evaluation Framework of the EU Common Agricultural Policy (Regulation (EU) 2021/2115, Art. 128 and Annex I): output O.1–O.37, result R.1–R.44, context C.01–C.49 and impact I.1–I.4x indicators, roughly 175 in total, with real output/result/impact levels.
+
+- **Methodology:** the Commission publishes indicator fiches per type (definitions, units, data sources, calculation rules), e.g. [context and impact fiches](https://agriculture.ec.europa.eu/system/files/2023-02/pmef-context-impact-indicators_en.pdf) and [result fiches](https://agriculture.ec.europa.eu/system/files/2023-09/pmef-result-indicators_en.pdf). Calculation rules for output and result indicators are also in Implementing Regulation (EU) 2021/2290; names are in [Annex I of Regulation 2021/2115 on EUR-Lex](https://eur-lex.europa.eu/eli/reg/2021/2115/2026-01-01/eng).
+- **Licence:** Commission content is CC BY 4.0 under Decision 2011/833/EU ([legal notice](https://commission.europa.eu/legal-notice_en)): reuse allowed with credit and an indication of changes. EU legislation on EUR-Lex is freely reusable.
+- **Access:** agriculture.ec.europa.eu answered automated requests with HTTP 429 (edge bot/rate filter); the agridata PMEF API (`api.tech.ec.europa.eu/agrifood/.../indicators_pmef`) serves code lists and values, not definitions, and returned HTTP 500 when tested. So ingestion would be a one-off extraction from the fiche PDFs or EUR-Lex, not a crawler.
+- **Scope question:** these are EU-internal agricultural-policy indicators, not development cooperation, but they form a genuine logframe useful for agri-environment and rural-development projects. Context and impact indicators partly overlap WDI/SDG; output and result indicators are largely unique.
+- **Caveat:** indicator counts come from search summaries (the site blocked direct reading); confirm in a browser before building.
 
 ## Check before planning
 
@@ -75,16 +111,68 @@ The 38 indicators for the 7 global targets of the Sendai Framework for Disaster 
 
 **If we build it:** a small `sendai` source of 38 short records from the A/71/644 text (code, wording, target, compound flag), each linking to the matching SDG records and to the Technical Guidance. No crawling needed (the list is fixed). Before publishing on the public endpoint, confirm the reuse status of A/71/644 (permissions@un.org or UNDRR).
 
-### ⚠️ EU Global Europe Results Framework (INTPA)
+### ⚠️ EU Global Europe Results Framework — GERF (INTPA) (`gerf`) — permission needed for the notes
 
-IndiKit already flags these indicators, but the methodology notes are PDFs, which take more work to parse.
+DG INTPA's results framework for NDICI-funded interventions, introduced by Commission Staff Working Document [SWD(2022) 22 final](https://data.consilium.europa.eu/doc/document/ST-5697-2022-INIT/en/pdf); home page on [capacity4dev](https://capacity4dev.europa.eu/resources/results-indicators_en). IndiKit already flags which of its indicators match.
+
+- **Content:** Level 1 impact indicators (mostly SDG indicators and international indices, e.g. GERF 1.23 = SDG 1.1.1); Level 2 output/outcome indicators "to be used in logframes" (largely unique, close to IndiKit in style); Level 3 for policy mainstreaming. Roughly 70–100 indicators across Levels 1–2 (exact total not verified).
+- **Methodology:** one methodological note (PDF) per Level 2 indicator: what it measures, policy relevance, data sources, required and suggested disaggregations, calculation method, examples; some notes "under development". Level 2 also in FR, ES, PT. [Combined Level 2 list](https://capacity4dev.europa.eu/sites/default/files/gerf_-_level_2_en-fr-sp-p_approved_version.pdf).
+- **Terms:** capacity4dev [conditions](https://capacity4dev.europa.eu/conditions_en): cite the author and link to the source; per search summaries, not for commercial use and no remixing/transforming. Restructuring the notes into an index counts as transforming. The SWD itself is a Commission document, generally CC BY 4.0 under Decision 2011/833/EU ([legal notice](https://commission.europa.eu/legal-notice_en); the notice on that specific document not confirmed).
+- **Access:** capacity4dev answered automated requests with HTTP 403 ("Not authorised", site-wide, even on the terms page) and then HTTP 429.
+- **Options:** index Level 1–2 titles and levels from the SWD now (CC BY 4.0, with a link to each note); ask DG INTPA (support@capacity4dev.eu) before copying the notes' text.
+
+### ⚠️ IFAD Core Outcome Indicators (`ifad`) — permission needed
+
+IFAD's Core Indicators framework (reportedly ~45: outreach, output, outcome) and the [COI Measurement Guidelines](https://www.ifad.org/en/coitraining/) (2021) with survey methods for agriculture, market access, resilience, empowerment and nutrition outcomes. Overlaps IndiKit's agriculture/livelihoods indicators only partly.
+
+- **Access:** all www.ifad.org URLs answered with HTTP 403 and an "IFAD | Checking your browser" bot page. robots.txt sets `Content-Signal: search=yes,ai-train=no,use=reference` and disallows AI crawlers.
+- **Terms:** per search summaries of [ifad.org/legal](https://www.ifad.org/legal), materials are IFAD property; copying encouraged for non-commercial personal or educational use; no Creative Commons licence found.
+- **To unblock:** ask IFAD; ingestion would then be manual from the guideline PDFs.
+
+### ⚠️ PRIMA KPI handbook (`prima`) — permission needed
+
+[KPIs handbook for applicants (2025)](https://prima-med.org/wp-content/uploads/2025/04/KPIs-handbook-for-the-applicants-2025-V1.0.pdf) of the PRIMA Foundation (EU Horizon Europe Art. 185 partnership for research and innovation in the Mediterranean): KPIs by impact area for agri-food and water (Nexus) projects, with descriptions, data collection methods, reporting guidelines and baselines. 74-page PDF (~5 MB); KPI count not verified.
+
+- **Access:** prima-med.org answered normally; robots.txt only disallows `/experts/`.
+- **Terms:** no licence or copyright statement found on the site; the PDF's own notice not checked. Ask PRIMA.
+
+### ⚠️ CALP multipurpose cash outcome indicators (`calp`) — permission needed
+
+[Multipurpose Outcome Indicators and Guidance](https://www.calpnetwork.org/publication/multipurpose-outcome-indicators-and-guidance/) (CALP Network / Grand Bargain cash workstream, May 2022; [ReliefWeb copy](https://reliefweb.int/report/world/multipurpose-outcome-indicators-and-guidance), 382 KB): household-level outcome indicators, cross-cutting (basic needs, protection, women's decision-making, coping strategies) and by sector, plus process indicators; EN, FR, ES, AR. Small set (estimated 25–40) with heavy IndiKit overlap.
+
+- **Access:** calpnetwork.org answered automated requests with a Cloudflare challenge (HTTP 403).
+- **Terms:** no licence or terms page found; footer "© The CALP Network". Check the PDF's notice or ask CALP.
+
+### ⚠️ UNICEF Strategic Plan Goal Area 3 indicator manual (`unicef`) — permission needed, outdated
+
+[Indicator Manual, Goal Area 3](https://www.unicef.org/documents/unicef-strategic-plan-goal-area-3-indicator-manual) (child protection, Strategic Plan 2018–2021, v1.7, PDF ~3.4 MB): definitions and calculation methods for outcome and output indicators. Superseded by the Strategic Plan 2022–2025 results framework; outcome indicators largely match SDG/MICS/DHS child-protection measures we already have.
+
+- **Terms:** [unicef.org/legal](https://www.unicef.org/legal): "UNICEF reserves all copyrights on material on its Web pages"; personal and educational use; more than a de minimis portion needs prior written permission.
+
+### ⚠️ DeSIRA global M&E framework (`desira`) — permission needed, low priority
+
+[Methodology of the DeSIRA global M&E framework](https://capacity4dev.europa.eu/library/methodology-global-monitoring-and-evaluation-framework-desira_en) (DG INTPA, Nov 2022): 28 global indicators for the EU's agricultural research and innovation programme, partly mapped to EU results framework indicators. PDF only; same capacity4dev terms and access issues as GERF. Consider after GERF.
 
 ### ⚠️ Former USAID standard indicators and the old Humanitarian Indicator Registry
 
 I believe both have been taken offline or retired. Verify before planning anything around them.
 
+## Reviewed: already covered or not planned
+
+- **FAO SDG data portal** ([link](https://www.fao.org/sustainable-development-goals-data-portal/data/en)): the 22–23 SDG indicators FAO is custodian of, with the same UN metadata we already index in `sdg`. CC BY 4.0 ([database terms](https://www.fao.org/contact-us/terms/db-terms-of-use/en)), so FAO portal links could be added to the matching SDG records.
+- **World Bank data catalogue** ([data.worldbank.org/indicator](https://data.worldbank.org/indicator)): `wdi` covers the World Development Indicators (source 2, 1,498 indicators). The World Bank API has ~70 other databases (e.g. Health Nutrition and Population, Gender, Education) that are not indexed; a future option for `wdi`.
+- **WHO GHO indicator list** ([link](https://www.who.int/data/gho/data/indicators)): names only; the metadata is in the Indicator Metadata Registry (on hold, see WHO above).
+- **IndiKit** ([link](https://www.indikit.net/)): live as `indikit`.
+- **Atlas4Dev** ([link](https://atlas.aics.gov.it/atlas4dev/), AICS): a statistics atlas aggregating international series (World Bank, UN, IMF…), mapped to SDGs; no definitions or methodology fields; GraphQL API behind a firewall; no licence stated. Duplicates WDI/SDG.
+- **EU CAP context indicators, old CMEF** ([link](https://agridata.ec.europa.eu/extensions/DataPortal/context_indicators.html)): 45 indicators, data up to 2019, replaced by PMEF; pages are dashboards without definitions.
+- **UNDP "The Indicators We Want"** ([link](https://www.undp.org/publications/indicators-we-want)): 2015 SIPRI sourcebook proposing SDG 16 indicators, superseded by the official SDG indicators; UNDP terms forbid redistribution; the site blocked automated access (Akamai 403; robots crawl-delay 10).
+- **UNESCO document [pf0000260674](https://unesdoc.unesco.org/ark:/48223/pf0000260674)**: probably "Proposed Indicators for Assessing Technical and Vocational Education and Training" (inter-agency working group, 2012); UNESDOC is behind Cloudflare, so the identity and licence (UNESCO open access is CC BY-SA 3.0 IGO, but co-publications may differ) are unconfirmed. Low priority unless TVET coverage matters.
+
+_The 14 Nov 2026 review of these sources was partly based on search summaries where sites blocked automated reading; each entry says what could not be verified._
+
 ## Related features
 
 - **Related indicators across sources.** IndiKit's sector pages flag indicators that match SDG indicators. Store those links (and WDI or WHO matches, for example where the World Bank metadata cites an SDG series code as its original source) as a "related" field, so `get_indicator_details` points to an indicator's counterparts in other repositories.
+- **Extra links on SDG records.** Add FAO's portal page to the SDG indicators FAO is custodian of, and GERF Level 1 codes to the SDG indicators they reuse.
 - **Per-source D1 updates.** `scripts/export-d1.ts` currently replaces the whole D1 catalog. A `--source` option would refresh one repository without touching the others and without the few seconds of downtime.
 - **Scheduled refresh.** A periodic job (e.g. monthly) to re-ingest all sources, check the counts, and update D1 and the Docker image.
